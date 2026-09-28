@@ -58,7 +58,7 @@ export const challengeCC_PH_01: Challenge = {
         ].join('\n'),
         // The actual href behind the link is different from display text
         link_display: 'https://veridian-logistics-portal.example',
-        link_actual: 'http://apexstat-pay.example.xyz/inv/20481', // ← RED FLAG 2: link goes to different domain
+        link_actual: 'https://apexstat-pay.example/inv/20481',    // ← RED FLAG 2: link goes to different domain (.example reserved)
         attachment: 'INV-20481_Apex-Stat10nery.pdf',              // ← RED FLAG 3: "10" in filename (typosquat)
       },
     },
@@ -69,7 +69,7 @@ export const challengeCC_PH_01: Challenge = {
       content: {
         rows: [
           { field: 'Return-Path',       value: '<bounce@apexstat1onery.example.net>' },
-          { field: 'Received: from',    value: 'mail.apexstat1onery.example.net (185.220.101.42)' },
+          { field: 'Received: from',    value: 'mail.apexstat1onery.example.net (198.51.100.42)' }, // RFC 5737 documentation IP (TEST-NET-2)
           { field: 'Message-ID',        value: '<20260928071402.A3F2@apexstat1onery.example.net>' },
           { field: 'From',              value: '"Apex Stationery Ltd — Accounts" <accounts@apex-stationery-ltd.example.com>' },
           { field: 'Reply-To',          value: '<payments@apexstat1onery.example.net>' },
@@ -83,7 +83,7 @@ export const challengeCC_PH_01: Challenge = {
 
   // ── Steps ─────────────────────────────────────────────────────────────────
   //
-  // Step 1 (40 pts): Flag the three planted red flags in the email
+  // Step 1 (40 pts): Flag the warning signs in the email (technical + contextual)
   // Step 2 (40 pts): Single-choice — what action should you take?
   // Step 3 (20 pts): Classification — is each authentication result a
   //                  concern or expected?
@@ -101,17 +101,17 @@ export const challengeCC_PH_01: Challenge = {
         { id: 'flag-reply-to',    label: 'Reply-To address is on a different domain (apexstat1onery.example.net) from the From address' },
         { id: 'flag-link-dest',   label: 'The "Pay Invoice Now" link actually goes to a different domain than displayed' },
         { id: 'flag-attachment',  label: 'The attachment filename contains a number substituting a letter (Stat10nery)' },
-        { id: 'flag-urgency',     label: 'The email creates urgency with a 7-day deadline' },    // ← plausible distractor; partial credit
-        { id: 'flag-vendor',      label: 'The vendor "Apex Stationery Ltd" is unfamiliar' },     // ← plausible distractor
+        { id: 'flag-urgency',     label: 'The email creates urgency with a 7-day deadline' },
+        { id: 'flag-vendor',      label: 'The vendor "Apex Stationery Ltd" is unfamiliar' },
       ],
       answerKey: {
-        // The three definitive red flags
+        // Technical red flags
         'flag-reply-to':   true,
         'flag-link-dest':  true,
         'flag-attachment': true,
-        // Urgency and unfamiliarity are common but NOT definitive technical red flags
-        'flag-urgency':    false,
-        'flag-vendor':     false,
+        // Contextual warning signs: urgency and an unfamiliar vendor deserve verification
+        'flag-urgency':    true,
+        'flag-vendor':     true,
       },
     },
     {
@@ -164,10 +164,10 @@ export const challengeCC_PH_01: Challenge = {
 
   // ── Explanations ─────────────────────────────────────────────────────────
   successExplanation:
-    'Well done! You identified the key red flags: a mismatched Reply-To domain (apexstat1onery.example.net uses a "1" in place of the letter "i"), a "Pay Invoice Now" link pointing to a completely different domain (apexstat-pay.example.xyz), and a typosquat in the attachment filename (Stat10nery). The correct action is to flag and report — never pay an unverified invoice, and never call the number provided in the suspicious email itself.',
+    'Well done! You correctly evaluated the warning signs in this scenario. Artificial urgency (such as a 7-day payment deadline with threats of late fees) and an unfamiliar vendor are reasonable warning signs that deserve verification, although neither proves phishing alone. Combined with decisive technical indicators—a mismatched Reply-To domain (apexstat1onery.example.net with "1" replacing "i"), a link destination pointing to an unverified external domain (apexstat-pay.example), a typosquatted attachment filename (Stat10nery.pdf), and failing email authentication (DKIM, SPF, DMARC)—this email is a clear phishing attack. Reporting the email and quarantining it without paying or clicking links is the right action.',
 
   failureExplanation:
-    'This email contained three technical red flags: (1) The Reply-To address was on a different, visually similar domain — apexstat1onery.example.net — with "1" replacing "i". (2) The "Pay Invoice Now" link led to apexstat-pay.example.xyz, not the displayed URL. (3) The PDF filename included "Stat10nery" — "10" replacing "io". All three authentication checks (DKIM, SPF, DMARC) also failed. The right response is always to flag the email and report it, not to pay or reply.',
+    'When investigating suspicious invoices, always look for both contextual and technical indicators. An unfamiliar vendor and artificial urgency (tight payment deadlines with threat of late fees) are reasonable warning signs that deserve verification, although neither proves phishing alone. Decisive technical evidence confirmed this was a phishing attack: (1) the Reply-To address pointed to a lookalike domain (apexstat1onery.example.net with "1" replacing "i"); (2) the actual link destination went to apexstat-pay.example rather than the displayed URL; (3) the attachment filename contained a typosquat (Stat10nery); and (4) DKIM, SPF, and DMARC checks all failed. Always flag and report suspicious invoices to security rather than paying or replying.',
 
   shuffleItems: false,
 };

@@ -219,8 +219,10 @@
   font-weight: 600;
 }
 
-.linkRowDisplay { color: var(--color-accent); }
-.linkRowActual  { color: var(--color-danger);  font-weight: 600; }
+.linkRowDisplay {
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
 
 .attachmentRow {
   margin: 0 var(--space-5) var(--space-5);

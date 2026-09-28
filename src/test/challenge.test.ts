@@ -2,11 +2,13 @@
  * Challenge evaluator tests — cc-ph-01 "The Suspicious Invoice"
  *
  * Covers:
- * - Flag-selection: all correct, partial credit, wrong flags, over-flagging
+ * - Evidence correctness: reserved example domains (.example) and RFC 5737 documentation IP
+ * - Flag-selection: all 5 warning signs (technical + urgency + vendor), partial credit, fair scoring
  * - Single-choice: correct, incorrect
  * - Classification: all correct, partial, all wrong
- * - buildStepResponses integration
- * - evaluateStep with each interaction type
+ * - buildStepResponses integration: perfect (100 pts) and all wrong (0 pts)
+ * - Explanations: educational coverage of urgency and unfamiliar vendor
+ * - getCorrectAnswerDisplay formatting
  */
 
 import { describe, it, expect } from 'vitest';
@@ -15,48 +17,88 @@ import { challengeCC_PH_01 } from '../challenges/data/cc-ph-01';
 
 const [stepFlags, stepAction, stepAuth] = challengeCC_PH_01.steps;
 
-// ── Flag-selection (40pts, partialCreditAllowed=true) ─────────────────────────
+// ── Evidence Integrity (Task 3A Requirement 1) ───────────────────────────────
 
-describe('flag-selection step — partial credit', () => {
-  it('all three correct flags ticked, no distractors → 40 pts', () => {
+describe('evidence integrity — domains and IP addresses', () => {
+  const emailEv = challengeCC_PH_01.evidence.find((e) => e.id === 'ev-email');
+  const headerEv = challengeCC_PH_01.evidence.find((e) => e.id === 'ev-header');
+
+  it('email actual link uses reserved .example domain and NOT .example.xyz', () => {
+    const content = emailEv?.content as { link_actual: string };
+    expect(content.link_actual).toBeDefined();
+    expect(content.link_actual).not.toContain('.xyz');
+    expect(content.link_actual).toMatch(/https?:\/\/[a-z0-9-]+\.example(\/.*)?$/);
+  });
+
+  it('email header Received-From uses RFC 5737 documentation IP address and NOT public 185.220.101.42', () => {
+    const content = headerEv?.content as { rows: { field: string; value: string }[] };
+    const received = content.rows.find((r) => r.field === 'Received: from');
+    expect(received?.value).toBeDefined();
+    expect(received?.value).not.toContain('185.220.101.42');
+    // 198.51.100.0/24 (TEST-NET-2) or 192.0.2.0/24 or 203.0.113.0/24
+    expect(received?.value).toMatch(/\(198\.51\.100\.\d{1,3}\)|\(192\.0\.2\.\d{1,3}\)|\(203\.0\.113\.\d{1,3}\)/);
+  });
+});
+
+// ── Flag-selection (40pts, partialCreditAllowed=true) (Task 3A Requirement 3) ──
+
+describe('flag-selection step — partial credit & fair scoring', () => {
+  it('all five warning signs flagged (technical + urgency + vendor) → full 40 pts', () => {
     const pts = evaluateStep(stepFlags, {
       'flag-reply-to': true,
       'flag-link-dest': true,
       'flag-attachment': true,
-      'flag-urgency': false,
-      'flag-vendor': false,
+      'flag-urgency': true,
+      'flag-vendor': true,
     });
     expect(pts).toBe(40);
   });
 
-  it('two correct flags → 32 pts (2 correct + 3 others correct = 5/5? no — 5 items)', () => {
-    // 5 items, pointValue=40, pointsPerItem=8
-    // tick 2 of 3 correct flags, leave distractors un-ticked → 3/5 correct outcomes misses 1 flag
-    // correct outcomes: reply-to=true(✓), link-dest=true(✓), attachment=false(✗ should be true), urgency=false(✓), vendor=false(✓)
-    const pts = evaluateStep(stepFlags, {
-      'flag-reply-to': true,
-      'flag-link-dest': true,
-      'flag-attachment': false, // wrong
-      'flag-urgency': false,
-      'flag-vendor': false,
-    });
-    // 4 of 5 items correct → 4 * (40/5) = 32
-    expect(pts).toBe(32);
-  });
-
-  it('tick a distractor (false positive) → reduces score', () => {
+  it('four warning signs flagged (e.g. missed vendor) → 32 pts (4/5 * 40)', () => {
     const pts = evaluateStep(stepFlags, {
       'flag-reply-to': true,
       'flag-link-dest': true,
       'flag-attachment': true,
-      'flag-urgency': true,  // wrong — should be false
-      'flag-vendor': false,
+      'flag-urgency': true,
+      'flag-vendor': false, // missed
     });
-    // 4/5 correct → 32
     expect(pts).toBe(32);
   });
 
-  it('nothing flagged → zero (0/3 correct flags ticked)', () => {
+  it('three technical warning signs flagged (missed urgency and vendor) → 24 pts (3/5 * 40)', () => {
+    const pts = evaluateStep(stepFlags, {
+      'flag-reply-to': true,
+      'flag-link-dest': true,
+      'flag-attachment': true,
+      'flag-urgency': false, // missed
+      'flag-vendor': false,  // missed
+    });
+    expect(pts).toBe(24);
+  });
+
+  it('two warning signs flagged → 16 pts (2/5 * 40)', () => {
+    const pts = evaluateStep(stepFlags, {
+      'flag-reply-to': true,
+      'flag-link-dest': true,
+      'flag-attachment': false,
+      'flag-urgency': false,
+      'flag-vendor': false,
+    });
+    expect(pts).toBe(16);
+  });
+
+  it('one warning sign flagged → 8 pts (1/5 * 40)', () => {
+    const pts = evaluateStep(stepFlags, {
+      'flag-reply-to': true,
+      'flag-link-dest': false,
+      'flag-attachment': false,
+      'flag-urgency': false,
+      'flag-vendor': false,
+    });
+    expect(pts).toBe(8);
+  });
+
+  it('nothing flagged → 0 pts (fair scoring: no free points for inactivity)', () => {
     const pts = evaluateStep(stepFlags, {
       'flag-reply-to': false,
       'flag-link-dest': false,
@@ -64,21 +106,7 @@ describe('flag-selection step — partial credit', () => {
       'flag-urgency': false,
       'flag-vendor': false,
     });
-    // 2 items (urgency, vendor) happen to be correctly false — but 3 items are wrongly false
-    // 2/5 correct → 2 * 8 = 16
-    expect(pts).toBe(16);
-  });
-
-  it('all items flagged → 2/5 correct (only distractors that should be false are now wrong)', () => {
-    const pts = evaluateStep(stepFlags, {
-      'flag-reply-to': true,   // ✓
-      'flag-link-dest': true,  // ✓
-      'flag-attachment': true, // ✓
-      'flag-urgency': true,    // ✗ (should be false)
-      'flag-vendor': true,     // ✗ (should be false)
-    });
-    // 3/5 correct → 24
-    expect(pts).toBe(24);
+    expect(pts).toBe(0);
   });
 });
 
@@ -150,8 +178,8 @@ describe('buildStepResponses — perfect attempt', () => {
       'flag-reply-to': true,
       'flag-link-dest': true,
       'flag-attachment': true,
-      'flag-urgency': false,
-      'flag-vendor': false,
+      'flag-urgency': true,
+      'flag-vendor': true,
     },
     'step-action': 'action-flag',
     'step-auth': {
@@ -180,36 +208,62 @@ describe('buildStepResponses — perfect attempt', () => {
 
 describe('buildStepResponses — all wrong attempt', () => {
   const wrongAnswers = {
-    'step-flags': {},
+    'step-flags': {
+      'flag-reply-to': false,
+      'flag-link-dest': false,
+      'flag-attachment': false,
+      'flag-urgency': false,
+      'flag-vendor': false,
+    },
     'step-action': 'action-pay',
-    'step-auth': {},
+    'step-auth': {
+      'auth-dkim': 'Expected / Normal',
+      'auth-spf': 'Expected / Normal',
+      'auth-dmarc': 'Expected / Normal',
+    },
   };
 
-  it('wrong answers yield very low total (≤ 16 from flag partial)', () => {
+  it('completely wrong answers yield 0 pts', () => {
     const responses = buildStepResponses(challengeCC_PH_01.steps, wrongAnswers);
     const total = responses.reduce((sum, r) => sum + r.pointsEarned, 0);
-    // action-pay = 0, empty auth = 0, empty flags = 16 (2 distractors happen to be correctly false)
-    expect(total).toBeLessThanOrEqual(20);
-    expect(total).toBeGreaterThanOrEqual(0);
+    expect(total).toBe(0);
   });
 });
 
-// ── getCorrectAnswerDisplay ───────────────────────────────────────────────────
+// ── Explanations & Answer Key Display (Task 3A Requirement 3) ─────────────────
 
-describe('getCorrectAnswerDisplay', () => {
-  it('flag-selection shows only the flagged items', () => {
+describe('explanations and answer display', () => {
+  it('success explanation highlights urgency and vendor as reasonable warning signs', () => {
+    const expl = challengeCC_PH_01.successExplanation;
+    expect(expl).toContain('urgency');
+    expect(expl).toContain('vendor');
+    expect(expl).toContain('deserve verification');
+    expect(expl).not.toContain('.xyz');
+  });
+
+  it('failure explanation highlights urgency and vendor as reasonable warning signs', () => {
+    const expl = challengeCC_PH_01.failureExplanation;
+    expect(expl).toContain('urgency');
+    expect(expl).toContain('vendor');
+    expect(expl).toContain('deserve verification');
+    expect(expl).not.toContain('.xyz');
+  });
+
+  it('getCorrectAnswerDisplay for flag-selection includes all 5 warning signs', () => {
     const display = getCorrectAnswerDisplay(stepFlags);
     expect(display).toContain('Reply-To');
     expect(display).toContain('Pay Invoice');
     expect(display).toContain('Stat10nery');
+    expect(display).toContain('urgency');
+    expect(display).toContain('vendor');
   });
 
-  it('single-choice shows the correct option label', () => {
+  it('getCorrectAnswerDisplay for single-choice shows correct action', () => {
     const display = getCorrectAnswerDisplay(stepAction);
     expect(display).toContain('Do NOT pay');
   });
 
-  it('classification shows all items with their correct labels', () => {
+  it('getCorrectAnswerDisplay for classification shows Concern for all headers', () => {
     const display = getCorrectAnswerDisplay(stepAuth);
     expect(display).toContain('DKIM');
     expect(display).toContain('Concern');

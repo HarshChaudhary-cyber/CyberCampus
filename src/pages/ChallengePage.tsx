@@ -28,26 +28,19 @@ type EmailContent = {
 };
 
 const EmailViewer: React.FC<{ content: EmailContent }> = ({ content }) => {
-  const replyDomainMismatch =
-    content.reply_to.split('@')[1]?.toLowerCase() !==
-    content.from_address.split('@')[1]?.toLowerCase();
-  const linkMismatch = content.link_display !== content.link_actual;
-
   return (
     <div className={styles.emailViewer}>
       <div className={styles.emailHeader}>
         {[
           { field: 'From',     value: `${content.from_display} <${content.from_address}>` },
-          { field: 'Reply-To', value: content.reply_to, warn: replyDomainMismatch },
+          { field: 'Reply-To', value: content.reply_to },
           { field: 'To',       value: content.to },
           { field: 'Subject',  value: content.subject },
           { field: 'Date',     value: content.date },
-        ].map(({ field, value, warn }) => (
+        ].map(({ field, value }) => (
           <div key={field} className={styles.emailRow}>
             <span className={styles.emailField}>{field}:</span>
-            <span className={warn ? styles.emailValueWarning : styles.emailValue}>
-              {value}
-            </span>
+            <span className={styles.emailValue}>{value}</span>
           </div>
         ))}
       </div>
@@ -65,15 +58,8 @@ const EmailViewer: React.FC<{ content: EmailContent }> = ({ content }) => {
         </div>
         <div className={styles.linkRow}>
           <span className={styles.linkRowLabel}>Actual URL:</span>
-          <span className={linkMismatch ? styles.linkRowActual : styles.linkRowDisplay}>
-            {content.link_actual}
-          </span>
+          <span className={styles.linkRowDisplay}>{content.link_actual}</span>
         </div>
-        {linkMismatch && (
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', marginTop: 'var(--space-2)' }}>
-            ⚠ The displayed URL does not match the actual destination.
-          </p>
-        )}
       </div>
 
       {/* Attachment */}

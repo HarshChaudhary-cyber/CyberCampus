@@ -155,10 +155,10 @@ describe('cc-ph-01 challenge data integrity', () => {
     expect(fromDomain).not.toBe(replyDomain);
   });
 
-  it('step-flags has 3 true items in answerKey', () => {
+  it('step-flags has 5 true items in answerKey (technical red flags + contextual warning signs)', () => {
     const step = challengeCC_PH_01.steps.find((s) => s.id === 'step-flags')!;
     const trueCount = Object.values(step.answerKey as Record<string, boolean>).filter(Boolean).length;
-    expect(trueCount).toBe(3);
+    expect(trueCount).toBe(5);
   });
 
   it('step-action correct answer is action-flag', () => {
