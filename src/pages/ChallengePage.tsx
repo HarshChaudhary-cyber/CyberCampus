@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
+  MessageSquare, Building2, UserCheck, ShieldAlert,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge } from '../challenges';
@@ -17,14 +18,51 @@ import styles from './ChallengePage.module.css';
 type EmailContent = {
   from_display: string;
   from_address: string;
-  reply_to: string;
+  reply_to?: string;
   to: string;
   subject: string;
   date: string;
   body: string;
-  link_display: string;
-  link_actual: string;
-  attachment: string;
+  link_display?: string;
+  link_actual?: string;
+  attachment?: string;
+};
+
+type ThreadMessage = {
+  id: string;
+  from_display: string;
+  from_address: string;
+  reply_to?: string;
+  to: string;
+  date: string;
+  subject: string;
+  body: string;
+};
+
+type ThreadContent = {
+  isThread?: boolean;
+  subject: string;
+  messages: ThreadMessage[];
+};
+
+type DirectoryContent = {
+  type: 'directory';
+  company: string;
+  employee: {
+    name: string;
+    title: string;
+    department: string;
+    officialEmail: string;
+    internalPhone: string;
+    officeLocation: string;
+    assistant: string;
+    currentStatus: string;
+  };
+  policy: {
+    code: string;
+    title: string;
+    rules: string[];
+  };
 };
 
 const EmailViewer: React.FC<{ content: EmailContent }> = ({ content }) => {
@@ -37,7 +75,7 @@ const EmailViewer: React.FC<{ content: EmailContent }> = ({ content }) => {
           { field: 'To',       value: content.to },
           { field: 'Subject',  value: content.subject },
           { field: 'Date',     value: content.date },
-        ].map(({ field, value }) => (
+        ].filter(({ value }) => Boolean(value)).map(({ field, value }) => (
           <div key={field} className={styles.emailRow}>
             <span className={styles.emailField}>{field}:</span>
             <span className={styles.emailValue}>{value}</span>
@@ -50,22 +88,129 @@ const EmailViewer: React.FC<{ content: EmailContent }> = ({ content }) => {
       </div>
 
       {/* Link inspector */}
-      <div className={styles.linkInspect} role="region" aria-label="Link inspection">
-        <p className={styles.linkInspectLabel}>🔍 Link Inspection</p>
-        <div className={styles.linkRow}>
-          <span className={styles.linkRowLabel}>Displayed:</span>
-          <span className={styles.linkRowDisplay}>{content.link_display}</span>
+      {content.link_display && (
+        <div className={styles.linkInspect} role="region" aria-label="Link inspection">
+          <p className={styles.linkInspectLabel}>🔍 Link Inspection</p>
+          <div className={styles.linkRow}>
+            <span className={styles.linkRowLabel}>Displayed:</span>
+            <span className={styles.linkRowDisplay}>{content.link_display}</span>
+          </div>
+          <div className={styles.linkRow}>
+            <span className={styles.linkRowLabel}>Actual URL:</span>
+            <span className={styles.linkRowDisplay}>{content.link_actual}</span>
+          </div>
         </div>
-        <div className={styles.linkRow}>
-          <span className={styles.linkRowLabel}>Actual URL:</span>
-          <span className={styles.linkRowDisplay}>{content.link_actual}</span>
+      )}
+
+      {/* Attachment */}
+      {content.attachment && (
+        <div className={styles.attachmentRow} role="region" aria-label="Attachment">
+          <Paperclip size={16} className={styles.attachIcon} aria-hidden="true" />
+          <span className={styles.attachName}>{content.attachment}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EmailThreadViewer: React.FC<{ content: ThreadContent }> = ({ content }) => {
+  return (
+    <div className={styles.threadViewer} role="region" aria-label="Email conversation thread">
+      <div className={styles.threadSubjectBar}>
+        <span className={styles.threadSubjectLabel}>Thread:</span>
+        <span className={styles.threadSubjectText}>{content.subject}</span>
+        <span className={styles.threadCountBadge}>{content.messages.length} messages</span>
+      </div>
+
+      <div className={styles.threadList}>
+        {content.messages.map((msg) => (
+          <div key={msg.id} className={styles.threadCard}>
+            <div className={styles.threadCardHeader}>
+              <div className={styles.threadSenderLine}>
+                <span className={styles.threadSenderName}>{msg.from_display}</span>
+                <span className={styles.threadSenderEmail}>&lt;{msg.from_address}&gt;</span>
+              </div>
+              <span className={styles.threadDate}>{msg.date}</span>
+            </div>
+
+            <div className={styles.threadSubMeta}>
+              {msg.reply_to && (
+                <div className={styles.threadMetaRow}>
+                  <span className={styles.threadMetaKey}>Reply-To:</span>
+                  <span className={styles.threadMetaVal}>{msg.reply_to}</span>
+                </div>
+              )}
+              <div className={styles.threadMetaRow}>
+                <span className={styles.threadMetaKey}>To:</span>
+                <span className={styles.threadMetaVal}>{msg.to}</span>
+              </div>
+            </div>
+
+            <div className={styles.threadMessageBody}>{msg.body}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CompanyDirectoryViewer: React.FC<{ content: DirectoryContent }> = ({ content }) => {
+  const { employee, policy } = content;
+  return (
+    <div className={styles.directoryViewer} role="region" aria-label="Internal Company Directory">
+      <div className={styles.directoryHeader}>
+        <Building2 size={24} className={styles.directoryIcon} aria-hidden="true" />
+        <div>
+          <h3 className={styles.directoryTitle}>{content.company}</h3>
+          <p className={styles.directorySubtitle}>Verified Corporate Staff Registry & Policy Reference</p>
         </div>
       </div>
 
-      {/* Attachment */}
-      <div className={styles.attachmentRow} role="region" aria-label="Attachment">
-        <Paperclip size={16} className={styles.attachIcon} aria-hidden="true" />
-        <span className={styles.attachName}>{content.attachment}</span>
+      <div className={styles.directoryCard}>
+        <div className={styles.employeeHeader}>
+          <div className={styles.employeeAvatar} aria-hidden="true">
+            <UserCheck size={24} />
+          </div>
+          <div>
+            <h4 className={styles.employeeName}>{employee.name}</h4>
+            <p className={styles.employeeTitle}>{employee.title} • {employee.department}</p>
+          </div>
+        </div>
+
+        <div className={styles.directoryGrid}>
+          <div className={styles.directoryGridItem}>
+            <span className={styles.directoryGridLabel}>Official Email:</span>
+            <span className={styles.directoryGridValue}>{employee.officialEmail}</span>
+          </div>
+          <div className={styles.directoryGridItem}>
+            <span className={styles.directoryGridLabel}>Internal Phone:</span>
+            <span className={styles.directoryGridValue}>{employee.internalPhone}</span>
+          </div>
+          <div className={styles.directoryGridItem}>
+            <span className={styles.directoryGridLabel}>Office Location:</span>
+            <span className={styles.directoryGridValue}>{employee.officeLocation}</span>
+          </div>
+          <div className={styles.directoryGridItem}>
+            <span className={styles.directoryGridLabel}>Executive Assistant:</span>
+            <span className={styles.directoryGridValue}>{employee.assistant}</span>
+          </div>
+          <div className={`${styles.directoryGridItem} ${styles['directoryGridItem--full']}`}>
+            <span className={styles.directoryGridLabel}>Current Status:</span>
+            <span className={styles.directoryGridValueStatus}>{employee.currentStatus}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.policyNotice}>
+        <div className={styles.policyHeader}>
+          <ShieldAlert size={18} className={styles.policyIcon} aria-hidden="true" />
+          <span className={styles.policyTitle}>{policy.title} ({policy.code})</span>
+        </div>
+        <ul className={styles.policyList}>
+          {policy.rules.map((rule, idx) => (
+            <li key={idx} className={styles.policyRuleItem}>{rule}</li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -102,7 +247,19 @@ const LogViewer: React.FC<{ content: LogContent }> = ({ content }) => (
 );
 
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
-  if (item.type === 'email') return <EmailViewer content={item.content as unknown as EmailContent} />;
+  if (item.type === 'email') {
+    const raw = item.content as Record<string, unknown>;
+    if (raw?.isThread || Array.isArray(raw?.messages)) {
+      return <EmailThreadViewer content={raw as unknown as ThreadContent} />;
+    }
+    return <EmailViewer content={item.content as unknown as EmailContent} />;
+  }
+  if (item.type === 'policy' || item.type === 'file') {
+    const raw = item.content as Record<string, unknown>;
+    if (raw?.type === 'directory') {
+      return <CompanyDirectoryViewer content={raw as unknown as DirectoryContent} />;
+    }
+  }
   if (item.type === 'log') return <LogViewer content={item.content as unknown as LogContent} />;
   return (
     <div style={{ padding: 'var(--space-4)', background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
@@ -291,7 +448,14 @@ export const ChallengePage: React.FC = () => {
 
   // ── Evidence icon map ──
   const evidenceIcons: React.ReactNode[] = challenge.evidence.map((ev) => {
-    if (ev.type === 'email') return <Mail size={14} aria-hidden="true" />;
+    if (ev.type === 'email') {
+      const raw = ev.content as Record<string, unknown>;
+      if (raw?.isThread || Array.isArray(raw?.messages)) {
+        return <MessageSquare size={14} aria-hidden="true" />;
+      }
+      return <Mail size={14} aria-hidden="true" />;
+    }
+    if (ev.type === 'policy' || ev.type === 'file') return <Building2 size={14} aria-hidden="true" />;
     if (ev.type === 'log') return <FileText size={14} aria-hidden="true" />;
     return <FileText size={14} aria-hidden="true" />;
   });

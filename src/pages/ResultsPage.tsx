@@ -9,28 +9,40 @@ import { getCorrectAnswerDisplay } from '../challenges/evaluator';
 import { Button } from '../components/ui/Button';
 import { HintDrawer } from '../components/ui/HintDrawer';
 import styles from './ResultsPage.module.css';
-import type { StepResponse } from '../types';
+import type { Step, StepResponse } from '../types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatSubmitted(
   submitted: StepResponse['submitted'],
-  interaction: string
+  step: Step
 ): string {
-  if (interaction === 'flag-selection') {
+  if (step.interaction === 'flag-selection') {
     const obj = (typeof submitted === 'object' && submitted !== null && !Array.isArray(submitted))
       ? (submitted as Record<string, boolean>)
       : {};
-    const flagged = Object.entries(obj)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-    return flagged.length ? flagged.join(', ') : 'Nothing flagged';
+    const flagged = step.items
+      .filter((it) => obj[it.id])
+      .map((it) => it.label);
+    return flagged.length ? flagged.join('; ') : 'Nothing flagged';
   }
-  if (Array.isArray(submitted)) return submitted.join(', ') || '—';
-  if (typeof submitted === 'object' && submitted !== null) {
-    return Object.entries(submitted as Record<string, string>)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join('\n');
+  if (step.interaction === 'single-choice') {
+    const chosen = typeof submitted === 'string' ? submitted : '';
+    const item = step.items.find((it) => it.id === chosen);
+    return item?.label ?? chosen ?? '—';
+  }
+  if (step.interaction === 'multi-choice') {
+    const chosen = Array.isArray(submitted) ? submitted : [];
+    const items = step.items.filter((it) => chosen.includes(it.id));
+    return items.map((it) => it.label).join(', ') || '—';
+  }
+  if (step.interaction === 'classification') {
+    if (typeof submitted === 'object' && submitted !== null && !Array.isArray(submitted)) {
+      const obj = submitted as Record<string, string>;
+      return step.items
+        .map((it) => `${it.label} → ${obj[it.id] ?? 'Unclassified'}`)
+        .join('\n');
+    }
   }
   return String(submitted) || '—';
 }
@@ -157,7 +169,7 @@ export const ResultsPage: React.FC = () => {
               const earned = resp?.pointsEarned ?? 0;
               const correct = getCorrectAnswerDisplay(step);
               const submitted = resp
-                ? formatSubmitted(resp.submitted, step.interaction)
+                ? formatSubmitted(resp.submitted, step)
                 : '—';
               const isCorrect = earned === step.pointValue;
               const isPartial = earned > 0 && earned < step.pointValue;
