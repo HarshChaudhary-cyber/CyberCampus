@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
+  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge } from '../challenges';
@@ -14,6 +15,192 @@ import type { EvidenceItem, Step, StepResponse } from '../types';
 import styles from './ChallengePage.module.css';
 
 // ── Evidence Viewers ──────────────────────────────────────────────────────────
+
+type InboxEmailItem = {
+  id: string;
+  sender_display: string;
+  sender_address: string;
+  to: string;
+  date: string;
+  subject: string;
+  preview: string;
+  category?: string;
+  body: string;
+  link?: {
+    displayedText: string;
+    actualDestination: string;
+  };
+  headers?: {
+    returnPath: string;
+    receivedFrom: string;
+    spf: string;
+    dkim: string;
+    dmarc: string;
+    isExternal: boolean;
+  };
+};
+
+type InboxContent = {
+  isInbox: boolean;
+  inboxOwner: string;
+  emails: InboxEmailItem[];
+};
+
+const InboxViewer: React.FC<{ content: InboxContent }> = ({ content }) => {
+  const [activeEmailId, setActiveEmailId] = useState<string>(
+    content.emails[0]?.id ?? ''
+  );
+  const [showHeaders, setShowHeaders] = useState<boolean>(false);
+
+  const activeEmail =
+    content.emails.find((e) => e.id === activeEmailId) ?? content.emails[0];
+
+  return (
+    <div className={styles.inboxViewer} role="region" aria-label="Simulated Mail Inbox">
+      {/* Top bar */}
+      <div className={styles.inboxHeader}>
+        <div className={styles.inboxHeaderLeft}>
+          <Inbox size={20} className={styles.inboxIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.inboxTitle}>Corporate Webmail</h3>
+            <p className={styles.inboxOwner}>{content.inboxOwner}</p>
+          </div>
+        </div>
+        <span className={styles.inboxCountBadge}>{content.emails.length} Messages</span>
+      </div>
+
+      <div className={styles.inboxLayout}>
+        {/* Navigation list */}
+        <div className={styles.inboxNav} role="tablist" aria-label="Inbox message list">
+          {content.emails.map((email) => {
+            const isSelected = email.id === activeEmail?.id;
+            return (
+              <button
+                key={email.id}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                tabIndex={0}
+                className={`${styles.inboxNavItem} ${isSelected ? styles['inboxNavItem--active'] : ''}`}
+                onClick={() => {
+                  setActiveEmailId(email.id);
+                  setShowHeaders(false);
+                }}
+              >
+                <div className={styles.inboxNavTop}>
+                  <span className={styles.inboxNavSender}>{email.sender_display}</span>
+                  {email.category && (
+                    <span className={styles.inboxNavCategory}>{email.category}</span>
+                  )}
+                </div>
+                <div className={styles.inboxNavSubject}>{email.subject}</div>
+                <div className={styles.inboxNavPreview}>{email.preview}</div>
+                <div className={styles.inboxNavDate}>{email.date}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Message View Pane */}
+        {activeEmail && (
+          <div className={styles.inboxMessagePane} role="tabpanel" aria-label={`Message: ${activeEmail.subject}`}>
+            <div className={styles.inboxMessageHeader}>
+              <h4 className={styles.inboxMessageSubject}>{activeEmail.subject}</h4>
+              <div className={styles.inboxMessageMeta}>
+                <div className={styles.inboxMetaRow}>
+                  <span className={styles.inboxMetaKey}>From:</span>
+                  <span className={styles.inboxMetaVal}>
+                    <strong>{activeEmail.sender_display}</strong> &lt;{activeEmail.sender_address}&gt;
+                  </span>
+                </div>
+                <div className={styles.inboxMetaRow}>
+                  <span className={styles.inboxMetaKey}>To:</span>
+                  <span className={styles.inboxMetaVal}>{activeEmail.to}</span>
+                </div>
+                <div className={styles.inboxMetaRow}>
+                  <span className={styles.inboxMetaKey}>Date:</span>
+                  <span className={styles.inboxMetaVal}>{activeEmail.date}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Message Body */}
+            <div className={styles.inboxMessageBody}>{activeEmail.body}</div>
+
+            {/* Neutral Link Inspector if email contains a link */}
+            {activeEmail.link && (
+              <div className={styles.inboxLinkCard} role="region" aria-label="Link destination inspection">
+                <div className={styles.inboxLinkHeader}>
+                  <ExternalLink size={16} aria-hidden="true" />
+                  <span>Link Destination Inspector</span>
+                </div>
+                <div className={styles.inboxLinkGrid}>
+                  <div className={styles.inboxLinkRow}>
+                    <span className={styles.inboxLinkLabel}>Displayed Text:</span>
+                    <span className={styles.inboxLinkValue}>{activeEmail.link.displayedText}</span>
+                  </div>
+                  <div className={styles.inboxLinkRow}>
+                    <span className={styles.inboxLinkLabel}>Actual Destination:</span>
+                    <span className={styles.inboxLinkValue}>{activeEmail.link.actualDestination}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Message Headers toggle */}
+            {activeEmail.headers && (
+              <div className={styles.inboxHeadersWrapper}>
+                <button
+                  type="button"
+                  className={styles.inboxHeadersToggle}
+                  onClick={() => setShowHeaders((prev) => !prev)}
+                  aria-expanded={showHeaders}
+                >
+                  <ShieldCheck size={16} aria-hidden="true" />
+                  <span>Message Headers & Authentication</span>
+                  {showHeaders ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showHeaders && (
+                  <div className={styles.inboxHeadersContent} role="region" aria-label="Header Details">
+                    <table className={styles.inboxHeadersTable}>
+                      <tbody>
+                        <tr>
+                          <th>Return-Path:</th>
+                          <td>{activeEmail.headers.returnPath}</td>
+                        </tr>
+                        <tr>
+                          <th>Received: from:</th>
+                          <td>{activeEmail.headers.receivedFrom}</td>
+                        </tr>
+                        <tr>
+                          <th>SPF:</th>
+                          <td>{activeEmail.headers.spf}</td>
+                        </tr>
+                        <tr>
+                          <th>DKIM:</th>
+                          <td>{activeEmail.headers.dkim}</td>
+                        </tr>
+                        <tr>
+                          <th>DMARC:</th>
+                          <td>{activeEmail.headers.dmarc}</td>
+                        </tr>
+                        <tr>
+                          <th>External Sender:</th>
+                          <td>{activeEmail.headers.isExternal ? 'TRUE' : 'FALSE'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 type EmailContent = {
   from_display: string;
@@ -249,6 +436,9 @@ const LogViewer: React.FC<{ content: LogContent }> = ({ content }) => (
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isInbox || Array.isArray(raw?.emails)) {
+      return <InboxViewer content={raw as unknown as InboxContent} />;
+    }
     if (raw?.isThread || Array.isArray(raw?.messages)) {
       return <EmailThreadViewer content={raw as unknown as ThreadContent} />;
     }
@@ -450,6 +640,9 @@ export const ChallengePage: React.FC = () => {
   const evidenceIcons: React.ReactNode[] = challenge.evidence.map((ev) => {
     if (ev.type === 'email') {
       const raw = ev.content as Record<string, unknown>;
+      if (raw?.isInbox || Array.isArray(raw?.emails)) {
+        return <Inbox size={14} aria-hidden="true" />;
+      }
       if (raw?.isThread || Array.isArray(raw?.messages)) {
         return <MessageSquare size={14} aria-hidden="true" />;
       }

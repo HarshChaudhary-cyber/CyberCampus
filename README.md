@@ -41,6 +41,19 @@ The application follows strict route hierarchy conventions:
   - Demonstrates that external email authentication passing only verifies the external domain owner, NOT that the sender is the company executive.
   - Distinguishes genuine warning signs (unauthorized exception demands, secrecy, pressure, domain mismatch) from non-fraud details (legitimate travel schedules, standard SPF/DKIM pass).
 
+### 3. Spear-Phish Campaign (`cc-ph-03`)
+- **Room**: Phishing Defense (`phishing`)
+- **Difficulty**: Advanced (100 pts, pass threshold: 70)
+- **Investigation**: Triage a simulated inbox containing 3 emails (2 legitimate and 1 targeted spear-phishing attempt targeting a DevOps lead).
+- **Evidence**:
+  - Simulated interactive webmail inbox with 3 distinct emails (IT SSO maintenance, MetricsCloud APM latency digest, and an urgent Kubernetes zero-day patch lure).
+  - Trusted IT Engineering Directory and Emergency Patch Policy `CHG-204` (mandating GitOps repository commits and forbidding external mirrors).
+  - Email Comparison Matrix showing sender domains, masked destinations, and authentication status.
+- **Educational Objective**:
+  - Classify multiple messages accurately (distinguishing genuine operational and SaaS vendor alerts from targeted executive impersonation).
+  - Identify specific indicators of spear-phishing (link masking, lookalike domain, policy violation, credential harvesting, artificial urgency) while rejecting benign technical distractors (CVE citation, kubectl syntax, valid external SPF/DKIM).
+  - Apply proper operational incident response (quarantine, SOC reporting, out-of-band phone verification).
+
 ---
 
 ## Development & Test Commands
