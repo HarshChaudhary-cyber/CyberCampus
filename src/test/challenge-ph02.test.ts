@@ -64,11 +64,15 @@ describe('cc-ph-02 evidence integrity', () => {
     expect(challengeCC_PH_02.evidence.map((e) => e.id)).toEqual(['ev-thread', 'ev-directory', 'ev-header']);
   });
 
-  it('thread evidence contains 4 messages depicting the conversation', () => {
+  it('thread evidence contains 4 messages with mismatched Reply-To domain', () => {
     const threadEv = challengeCC_PH_02.evidence.find((e) => e.id === 'ev-thread')!;
-    const content = threadEv.content as { isThread: boolean; messages: { id: string }[] };
+    const content = threadEv.content as { isThread: boolean; messages: { id: string; from_address?: string; reply_to?: string }[] };
     expect(content.isThread).toBe(true);
     expect(content.messages).toHaveLength(4);
+
+    const msg2 = content.messages.find((m) => m.id === 'msg-2');
+    expect(msg2?.from_address).toBe('victoria.sterling-ceo@mail-executive.example');
+    expect(msg2?.reply_to).toBe('exec-transfers@wire-portal-routing.example');
   });
 
   it('company directory provides trusted contact details and policy FIN-402', () => {
@@ -93,79 +97,140 @@ describe('cc-ph-02 evidence integrity', () => {
     }
   });
 
-  it('header analysis uses RFC 5737 documentation IP and no public routable IPs', () => {
+  it('header analysis shows SPF, DKIM, and DMARC pass for external sender domain and uses RFC 5737 IP', () => {
     const headerEv = challengeCC_PH_02.evidence.find((e) => e.id === 'ev-header')!;
     const rows = (headerEv.content as { rows: { field: string; value: string }[] }).rows;
     const received = rows.find((r) => r.field.startsWith('Received'));
     expect(received?.value).toMatch(/\(198\.51\.100\.\d{1,3}\)|\(192\.0\.2\.\d{1,3}\)|\(203\.0\.113\.\d{1,3}\)/);
+
+    const spf = rows.find((r) => r.field === 'SPF');
+    const dkim = rows.find((r) => r.field === 'DKIM');
+    const dmarc = rows.find((r) => r.field === 'DMARC');
+    const replyTo = rows.find((r) => r.field === 'Reply-To');
+
+    expect(spf?.value).toContain('PASS');
+    expect(dkim?.value).toContain('PASS');
+    expect(dmarc?.value).toContain('PASS for domain mail-executive.example');
+    expect(replyTo?.value).toContain('wire-portal-routing.example');
+    // Ensure no inaccurate veridian DMARC fail claim
+    expect(rows.some((r) => r.field.toLowerCase().includes('veridian'))).toBe(false);
   });
 });
 
-// ── Step 1: Flag Selection (35 pts, partial credit) ───────────────────────────
+// ── Step 1: Flag Selection (35 pts, partial credit: 7 items = 5 pts each) ─────
 
 describe('cc-ph-02 step 1: flag-selection', () => {
-  it('all 5 warning signs flagged → full 35 pts (7 pts each)', () => {
+  it('has 7 items including at least one believable choice that is NOT fraud', () => {
+    expect(stepFlags.items).toHaveLength(7);
+    const key = stepFlags.answerKey as Record<string, boolean>;
+    const falseItems = stepFlags.items.filter((it) => key[it.id] === false);
+    expect(falseItems.length).toBeGreaterThanOrEqual(1);
+    expect(falseItems.some((it) => it.id === 'flag-auth-pass')).toBe(true);
+    expect(falseItems.some((it) => it.id === 'flag-travel')).toBe(true);
+  });
+
+  it('selecting only the 5 true warning signs → full 35 pts (7 items matching key)', () => {
     const pts = evaluateStep(stepFlags, {
-      'flag-domain': true,
-      'flag-bypass': true,
+      'flag-domain':    true,
+      'flag-bypass':    true,
       'flag-isolation': true,
-      'flag-pressure': true,
-      'flag-external': true,
+      'flag-pressure':  true,
+      'flag-reply-to':  true,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
     });
     expect(pts).toBe(35);
   });
 
-  it('4 of 5 warning signs flagged → 28 pts', () => {
+  it('selecting all choices CANNOT earn full points (earns 25 pts because distractors are flagged)', () => {
     const pts = evaluateStep(stepFlags, {
-      'flag-domain': true,
-      'flag-bypass': true,
+      'flag-domain':    true,
+      'flag-bypass':    true,
       'flag-isolation': true,
-      'flag-pressure': true,
-      'flag-external': false,
+      'flag-pressure':  true,
+      'flag-reply-to':  true,
+      'flag-auth-pass': true,
+      'flag-travel':    true,
     });
-    expect(pts).toBe(28);
+    // 5 correct matches (25 pts), 2 incorrect matches (0 pts)
+    expect(pts).toBe(25);
+    expect(pts).toBeLessThan(35);
   });
 
-  it('3 of 5 warning signs flagged → 21 pts', () => {
+  it('4 of 5 true flags + 2 non-fraud items left unflagged → 30 pts (6 of 7 correct)', () => {
     const pts = evaluateStep(stepFlags, {
-      'flag-domain': true,
-      'flag-bypass': true,
+      'flag-domain':    true,
+      'flag-bypass':    true,
       'flag-isolation': true,
-      'flag-pressure': false,
-      'flag-external': false,
+      'flag-pressure':  true,
+      'flag-reply-to':  false,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
     });
-    expect(pts).toBe(21);
+    expect(pts).toBe(30);
   });
 
-  it('2 of 5 warning signs flagged → 14 pts', () => {
+  it('3 of 5 true flags + 2 non-fraud items left unflagged → 25 pts (5 of 7 correct)', () => {
     const pts = evaluateStep(stepFlags, {
-      'flag-domain': true,
-      'flag-bypass': true,
-      'flag-isolation': false,
-      'flag-pressure': false,
-      'flag-external': false,
+      'flag-domain':    true,
+      'flag-bypass':    true,
+      'flag-isolation': true,
+      'flag-pressure':  false,
+      'flag-reply-to':  false,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
     });
-    expect(pts).toBe(14);
+    expect(pts).toBe(25);
   });
 
-  it('1 of 5 warning signs flagged → 7 pts', () => {
+  it('2 of 5 true flags + 2 non-fraud items left unflagged → 20 pts (4 of 7 correct)', () => {
     const pts = evaluateStep(stepFlags, {
-      'flag-domain': true,
-      'flag-bypass': false,
+      'flag-domain':    true,
+      'flag-bypass':    true,
       'flag-isolation': false,
-      'flag-pressure': false,
-      'flag-external': false,
+      'flag-pressure':  false,
+      'flag-reply-to':  false,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
     });
-    expect(pts).toBe(7);
+    expect(pts).toBe(20);
   });
 
-  it('0 warning signs flagged → 0 pts', () => {
+  it('1 of 5 true flags + 2 non-fraud items left unflagged → 15 pts (3 of 7 correct)', () => {
     const pts = evaluateStep(stepFlags, {
-      'flag-domain': false,
-      'flag-bypass': false,
+      'flag-domain':    true,
+      'flag-bypass':    false,
       'flag-isolation': false,
-      'flag-pressure': false,
-      'flag-external': false,
+      'flag-pressure':  false,
+      'flag-reply-to':  false,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
+    });
+    expect(pts).toBe(15);
+  });
+
+  it('0 true flags + 2 non-fraud items left unflagged → 10 pts (2 of 7 correct)', () => {
+    const pts = evaluateStep(stepFlags, {
+      'flag-domain':    false,
+      'flag-bypass':    false,
+      'flag-isolation': false,
+      'flag-pressure':  false,
+      'flag-reply-to':  false,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
+    });
+    expect(pts).toBe(10);
+  });
+
+  it('only wrong flags selected (0 of 7 correct) → 0 pts', () => {
+    const pts = evaluateStep(stepFlags, {
+      'flag-domain':    false,
+      'flag-bypass':    false,
+      'flag-isolation': false,
+      'flag-pressure':  false,
+      'flag-reply-to':  false,
+      'flag-auth-pass': true,
+      'flag-travel':    true,
     });
     expect(pts).toBe(0);
   });
@@ -216,11 +281,13 @@ describe('cc-ph-02 step 3: operational decision', () => {
 describe('cc-ph-02 buildStepResponses integration', () => {
   const perfectAnswers = {
     'step-flags': {
-      'flag-domain': true,
-      'flag-bypass': true,
+      'flag-domain':    true,
+      'flag-bypass':    true,
       'flag-isolation': true,
-      'flag-pressure': true,
-      'flag-external': true,
+      'flag-pressure':  true,
+      'flag-reply-to':  true,
+      'flag-auth-pass': false,
+      'flag-travel':    false,
     },
     'step-verify': 'verify-directory',
     'step-action': 'action-refuse-report',
@@ -237,35 +304,63 @@ describe('cc-ph-02 buildStepResponses integration', () => {
     expect(score.passed).toBe(true);
   });
 
-  it('partial credit (3 flags + correct verification + correct action) = 86 pts (passes)', () => {
+  it('selecting all flags (over-flagging) yields 25 + 35 + 30 = 90 pts (passes, but loses 10 pts for distractors)', () => {
+    const allFlagsAnswers = {
+      'step-flags': {
+        'flag-domain':    true,
+        'flag-bypass':    true,
+        'flag-isolation': true,
+        'flag-pressure':  true,
+        'flag-reply-to':  true,
+        'flag-auth-pass': true,
+        'flag-travel':    true,
+      },
+      'step-verify': 'verify-directory',
+      'step-action': 'action-refuse-report',
+    };
+    const responses = buildStepResponses(challengeCC_PH_02.steps, allFlagsAnswers);
+    const earned = responses.reduce((sum, r) => sum + r.pointsEarned, 0);
+    expect(earned).toBe(90); // 25 + 35 + 30
+    expect(earned).toBeLessThan(100);
+
+    const score = computeScore(responses, 0, challengeCC_PH_02.passThreshold);
+    expect(score.finalScore).toBe(90);
+    expect(score.passed).toBe(true);
+  });
+
+  it('partial credit (3 flags + correct verification + correct action) = 90 pts (passes)', () => {
     const partialAnswers = {
       'step-flags': {
-        'flag-domain': true,
-        'flag-bypass': true,
+        'flag-domain':    true,
+        'flag-bypass':    true,
         'flag-isolation': true,
-        'flag-pressure': false,
-        'flag-external': false,
+        'flag-pressure':  false,
+        'flag-reply-to':  false,
+        'flag-auth-pass': false,
+        'flag-travel':    false,
       },
       'step-verify': 'verify-directory',
       'step-action': 'action-refuse-report',
     };
     const responses = buildStepResponses(challengeCC_PH_02.steps, partialAnswers);
     const earned = responses.reduce((sum, r) => sum + r.pointsEarned, 0);
-    expect(earned).toBe(86); // 21 + 35 + 30
+    expect(earned).toBe(90); // 25 + 35 + 30
 
     const score = computeScore(responses, 1, challengeCC_PH_02.passThreshold);
-    expect(score.finalScore).toBe(76); // 86 - 10
+    expect(score.finalScore).toBe(80); // 90 - 10
     expect(score.passed).toBe(true);
   });
 
   it('all-wrong answers yield 0 pts', () => {
     const wrongAnswers = {
       'step-flags': {
-        'flag-domain': false,
-        'flag-bypass': false,
+        'flag-domain':    false,
+        'flag-bypass':    false,
         'flag-isolation': false,
-        'flag-pressure': false,
-        'flag-external': false,
+        'flag-pressure':  false,
+        'flag-reply-to':  false,
+        'flag-auth-pass': true,
+        'flag-travel':    true,
       },
       'step-verify': 'verify-reply',
       'step-action': 'action-pay-now',
@@ -283,17 +378,27 @@ describe('cc-ph-02 buildStepResponses integration', () => {
 // ── Explanations & Answer Key Display ─────────────────────────────────────────
 
 describe('cc-ph-02 explanations & getCorrectAnswerDisplay', () => {
-  it('explanations cover BEC, CEO Fraud, and directory verification', () => {
+  it('explanations cover external authentication limits, directory verification, and policy', () => {
     expect(challengeCC_PH_02.successExplanation).toContain('Business Email Compromise');
     expect(challengeCC_PH_02.successExplanation).toContain('FIN-402');
+    expect(challengeCC_PH_02.successExplanation).toContain('wire-portal-routing.example');
+    expect(challengeCC_PH_02.successExplanation).toContain('authenticating an external sender domain does NOT establish that the sender is the CEO');
+
     expect(challengeCC_PH_02.failureExplanation).toContain('CEO Fraud');
     expect(challengeCC_PH_02.failureExplanation).toContain('Marcus Vance');
+    expect(challengeCC_PH_02.failureExplanation).toContain('wire-portal-routing.example');
+    expect(challengeCC_PH_02.failureExplanation).toContain('authentication of an external sender domain does not establish that the sender is the CEO');
+    expect(challengeCC_PH_02.failureExplanation).toContain('trusted company directory and payment policy are the decisive checks');
   });
 
-  it('getCorrectAnswerDisplay formats all 3 steps properly', () => {
+  it('getCorrectAnswerDisplay formats all 3 steps properly without showing false items', () => {
     const displayFlags = getCorrectAnswerDisplay(stepFlags);
     expect(displayFlags).toContain('sender address');
     expect(displayFlags).toContain('FIN-402');
+    expect(displayFlags).toContain('wire-portal-routing.example');
+    // Non-fraud items should not be listed as things to flag
+    expect(displayFlags).not.toContain('flag-auth-pass');
+    expect(displayFlags).not.toContain('flag-travel');
 
     const displayVerify = getCorrectAnswerDisplay(stepVerify);
     expect(displayVerify).toContain('trusted directory');
@@ -332,5 +437,21 @@ describe('cc-ph-02 independent coexistence with cc-ph-01', () => {
     expect(combinedSkills.has('link-inspection')).toBe(true);
     expect(combinedSkills.has('business-email-compromise')).toBe(true);
     expect(combinedSkills.has('out-of-band-verification')).toBe(true);
+  });
+});
+
+// ── Route & URL Contract Verification ─────────────────────────────────────────
+
+describe('route & URL conventions', () => {
+  it('room URL for Phishing Defense is /room/phishing', () => {
+    const roomId = challengeCC_PH_02.roomId;
+    expect(`/room/${roomId}`).toBe('/room/phishing');
+  });
+
+  it('results URL uses attempt ID format /results/:attemptId', () => {
+    const sampleAttemptId = 'att-1727539200000-abcd';
+    const resultsUrl = `/results/${sampleAttemptId}`;
+    expect(resultsUrl).toMatch(/^\/results\/att-[a-zA-Z0-9-]+$/);
+    expect(resultsUrl).not.toContain('/results/cc-ph-02');
   });
 });

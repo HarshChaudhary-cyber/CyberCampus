@@ -48,7 +48,7 @@ export const challengeCC_PH_02: Challenge = {
             id: 'msg-2',
             from_display: 'Victoria Sterling',
             from_address: 'victoria.sterling-ceo@mail-executive.example',
-            reply_to: 'exec-transfers@mail-executive.example',
+            reply_to: 'exec-transfers@wire-portal-routing.example',
             to: 'a.morgan@veridian-logistics.example',
             date: 'Mon, 28 Sep 2026 08:35:14 +0000',
             subject: 'URGENT: Confidential Acquisition Consulting Retainer',
@@ -69,7 +69,7 @@ export const challengeCC_PH_02: Challenge = {
             id: 'msg-4',
             from_display: 'Victoria Sterling',
             from_address: 'victoria.sterling-ceo@mail-executive.example',
-            reply_to: 'exec-transfers@mail-executive.example',
+            reply_to: 'exec-transfers@wire-portal-routing.example',
             to: 'a.morgan@veridian-logistics.example',
             date: 'Mon, 28 Sep 2026 08:47:33 +0000',
             subject: 'Re: URGENT: Confidential Acquisition Consulting Retainer',
@@ -116,12 +116,12 @@ export const challengeCC_PH_02: Challenge = {
           { field: 'Return-Path',        value: '<bounce@mail-executive.example>' },
           { field: 'Received: from',     value: 'relay01.mail-executive.example (198.51.100.88)' },
           { field: 'From',               value: '"Victoria Sterling" <victoria.sterling-ceo@mail-executive.example>' },
-          { field: 'Reply-To',           value: '<exec-transfers@mail-executive.example>' },
+          { field: 'Reply-To',           value: '<exec-transfers@wire-portal-routing.example>' },
           { field: 'To',                 value: '<a.morgan@veridian-logistics.example>' },
           { field: 'Subject',            value: 'Re: URGENT: Confidential Acquisition Consulting Retainer' },
-          { field: 'SPF',                value: 'PASS (sender IP matches mail-executive.example; NOT veridian-logistics.example)' },
-          { field: 'DKIM',               value: 'PASS for domain mail-executive.example' },
-          { field: 'DMARC (veridian)',   value: 'FAIL — sender address is completely outside veridian-logistics.example' },
+          { field: 'SPF',                value: 'PASS (sender IP 198.51.100.88 is authorized by mail-executive.example)' },
+          { field: 'DKIM',               value: 'PASS (valid signature from domain mail-executive.example)' },
+          { field: 'DMARC',              value: 'PASS for domain mail-executive.example (SPF and DKIM aligned)' },
           { field: 'X-External-Sender',  value: 'TRUE — message originated outside Veridian internal mail systems' },
         ],
       },
@@ -130,7 +130,7 @@ export const challengeCC_PH_02: Challenge = {
 
   // ── Steps ─────────────────────────────────────────────────────────────────
   //
-  // Step 1 (35 pts): Identify supporting warning signs (flag-selection, partial credit)
+  // Step 1 (35 pts): Identify supporting warning signs (flag-selection, partial credit: 7 items = 5 pts each)
   // Step 2 (35 pts): Choose safe verification method (single-choice, no partial)
   // Step 3 (30 pts): Decide how to handle the request (single-choice, no partial)
   //
@@ -165,9 +165,19 @@ export const challengeCC_PH_02: Challenge = {
             'The email uses artificial urgency ("every hour we delay risks falling out of exclusivity") to rush an unverified wire transfer',
         },
         {
-          id: 'flag-external',
+          id: 'flag-reply-to',
           label:
-            'Headers reveal the email originated from an external mail relay (198.51.100.88) with a mismatched Reply-To address',
+            'The Reply-To header directs responses to a different external domain (wire-portal-routing.example) than the sender domain (mail-executive.example)',
+        },
+        {
+          id: 'flag-auth-pass',
+          label:
+            'The email headers confirm SPF, DKIM, and DMARC authentication checks all passed for the sender domain (mail-executive.example)',
+        },
+        {
+          id: 'flag-travel',
+          label:
+            'CEO Victoria Sterling is currently on business travel in Tokyo attending the International Logistics Summit',
         },
       ],
       answerKey: {
@@ -175,7 +185,9 @@ export const challengeCC_PH_02: Challenge = {
         'flag-bypass':    true,
         'flag-isolation': true,
         'flag-pressure':  true,
-        'flag-external':  true,
+        'flag-reply-to':  true,
+        'flag-auth-pass': false,
+        'flag-travel':    false,
       },
     },
     {
@@ -262,10 +274,10 @@ export const challengeCC_PH_02: Challenge = {
 
   // ── Explanations ─────────────────────────────────────────────────────────
   successExplanation:
-    'Outstanding investigation! You successfully intercepted a classic Business Email Compromise (BEC) / CEO Fraud attack. The adversary spoofed CEO Victoria Sterling\'s display name using an external lookalike domain (mail-executive.example), leveraged real travel information to explain their unavailability, and manufactured extreme urgency to intimidate finance staff into bypassing dual-control policy FIN-402. The only legitimate way to verify high-risk executive requests is via trusted, pre-established directory channels (such as her internal extension or executive assistant Marcus Vance). Freezing the request and reporting it to security protected Veridian Logistics from an irreversible $42,500 loss.',
+    'Outstanding investigation! You successfully intercepted a classic Business Email Compromise (BEC) / CEO Fraud attack. The adversary spoofed CEO Victoria Sterling\'s display name using an external lookalike domain (mail-executive.example) with a mismatched Reply-To routing address (wire-portal-routing.example), and manufactured extreme urgency to intimidate finance staff into bypassing dual-control policy FIN-402. Crucially, while SPF, DKIM, and DMARC passed for the external domain mail-executive.example, authenticating an external sender domain does NOT establish that the sender is the CEO—attackers configure valid authentication on domains they control so emails pass spam filters. The trusted company directory and wire authorization policy are the decisive checks. Similarly, the CEO\'s Tokyo travel was a real event the attacker exploited as a pretext, not evidence of fraud. Relying on out-of-band directory verification protected Veridian Logistics from an irreversible $42,500 loss.',
 
   failureExplanation:
-    'This was a Business Email Compromise (BEC) attack, also known as CEO Fraud. Attackers rely on authority, confidentiality, and urgency to coerce staff into bypassing financial safeguards. Crucial clues included: (1) sender address victoria.sterling-ceo@mail-executive.example did not match the official directory email v.sterling@veridian-logistics.example; (2) the sender demanded an unauthorized policy exception; and (3) the sender explicitly forbade contact with executive assistant Marcus Vance. Replying to the email or trusting numbers in the message is unsafe because the attacker controls those channels. Always verify through the trusted company directory and report suspected BEC attempts to security immediately.',
+    'This was a Business Email Compromise (BEC) attack, also known as CEO Fraud. Attackers rely on authority, confidentiality, and urgency to coerce staff into bypassing financial safeguards. Decisive clues indicating fraud included: (1) sender address victoria.sterling-ceo@mail-executive.example did not match official directory email v.sterling@veridian-logistics.example; (2) Reply-To routed replies to a different external domain (wire-portal-routing.example); (3) demand for an unauthorized policy exception bypassing FIN-402; and (4) manufactured urgency and enforced secrecy (forbidding contact with executive assistant Marcus Vance). Crucially, authentication of an external sender domain does not establish that the sender is the CEO—SPF, DKIM, and DMARC passing only proves that mail-executive.example authorized the message. The trusted company directory and payment policy are the decisive checks. Furthermore, the CEO\'s legitimate Tokyo travel schedule was a known business fact exploited as a social-engineering pretext, not evidence of fraud. Always verify through the trusted directory and report suspected BEC attempts immediately.',
 
   shuffleItems: false,
 };
