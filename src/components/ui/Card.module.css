@@ -1,0 +1,42 @@
+/* ============================================================
+   Card component styles
+   ============================================================ */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow   var(--dur-base) var(--ease-out),
+    transform    var(--dur-base) var(--ease-out);
+}
+
+.card--interactive {
+  cursor: pointer;
+}
+
+.card--interactive:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent-glow), var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card--interactive:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.card--glow {
+  box-shadow: 0 0 30px var(--color-accent-glow), var(--shadow-md);
+  border-color: var(--color-accent);
+}
+
+.card--flat {
+  background: var(--color-surface-alt);
+}
+
+.card--sm { padding: var(--space-4); }
+.card--lg { padding: var(--space-8); }
