@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
@@ -866,6 +866,81 @@ const Classification: React.FC<{
   </div>
 );
 
+const Ordering: React.FC<{
+  step: Step;
+  value: string[];
+  onChange: (v: string[]) => void;
+  submitted: boolean;
+}> = ({ step, value, onChange, submitted }) => {
+  const currentOrder = useMemo(() => {
+    if (Array.isArray(value) && value.length === step.items.length) {
+      return value;
+    }
+    return step.items.map((i) => i.id);
+  }, [value, step.items]);
+
+  const itemMap = useMemo(() => {
+    const map = new Map<string, Step['items'][0]>();
+    for (const item of step.items) map.set(item.id, item);
+    return map;
+  }, [step.items]);
+
+  const moveItem = (index: number, direction: 'up' | 'down') => {
+    if (submitted) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+    const newOrder = [...currentOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[targetIndex];
+    newOrder[targetIndex] = temp;
+    onChange(newOrder);
+  };
+
+  return (
+    <div className={styles.orderList} role="list" aria-label={step.prompt}>
+      {currentOrder.map((itemId, idx) => {
+        const item = itemMap.get(itemId);
+        if (!item) return null;
+        return (
+          <div
+            key={itemId}
+            className={styles.orderItem}
+            role="listitem"
+            aria-label={`Position ${idx + 1}: ${item.label}`}
+          >
+            <div className={styles.orderPositionBadge} aria-hidden="true">
+              {idx + 1}
+            </div>
+            <div className={styles.orderItemContent}>
+              <span className={styles.orderItemLabel}>{item.label}</span>
+            </div>
+            <div className={styles.orderActions}>
+              <button
+                type="button"
+                className={styles.orderBtn}
+                disabled={submitted || idx === 0}
+                aria-label={`Move item ${idx + 1} up to position ${idx}`}
+                onClick={() => moveItem(idx, 'up')}
+              >
+                <ChevronUp size={16} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={styles.orderBtn}
+                disabled={submitted || idx === currentOrder.length - 1}
+                aria-label={`Move item ${idx + 1} down to position ${idx + 2}`}
+                onClick={() => moveItem(idx, 'down')}
+              >
+                <ChevronDown size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 type StepState = Record<string, StepResponse['submitted']>;
@@ -889,6 +964,8 @@ export const ChallengePage: React.FC = () => {
         initial[step.id] = '';
       } else if (step.interaction === 'classification') {
         initial[step.id] = {};
+      } else if (step.interaction === 'ordering' || step.interaction === 'ranking') {
+        initial[step.id] = step.items.map((i) => i.id);
       } else {
         initial[step.id] = '';
       }
@@ -1095,6 +1172,14 @@ export const ChallengePage: React.FC = () => {
                     <Classification
                       step={step}
                       value={stepState[step.id] as Record<string, string> ?? {}}
+                      onChange={(v) => handleStepChange(step.id, v)}
+                      submitted={isSubmitted}
+                    />
+                  )}
+                  {(step.interaction === 'ordering' || step.interaction === 'ranking') && (
+                    <Ordering
+                      step={step}
+                      value={(stepState[step.id] as string[]) || step.items.map((i) => i.id)}
                       onChange={(v) => handleStepChange(step.id, v)}
                       submitted={isSubmitted}
                     />

@@ -34,10 +34,10 @@ describe('cc-so-01 registration & metadata', () => {
     expect(ch?.roomId).toBe('secops');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS alongside cc-so-02 while advanced SecOps (cc-so-03) remains locked', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS alongside cc-so-02 and cc-so-03', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-so-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-so-02')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-so-03')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-so-03')).toBe(true);
   });
 
   it('preserves all three Phishing Defense challenges in LIVE_CHALLENGE_IDS', () => {

@@ -34,10 +34,10 @@ describe('cc-so-02 registration & metadata', () => {
     expect(ch?.roomId).toBe('secops');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS while advanced SecOps (cc-so-03) remains locked', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS alongside cc-so-01 and cc-so-03', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-so-02')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-so-01')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-so-03')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-so-03')).toBe(true);
   });
 
   it('preserves all three Phishing Defense challenges in LIVE_CHALLENGE_IDS', () => {
@@ -107,21 +107,42 @@ describe('cc-so-02 evidence integrity', () => {
     }
   });
 
-  it('baseline profile documents Marcus on-call rotation and assigned hardware', () => {
+  it('baseline profile documents Niall on-call rotation, assigned hardware, and regions', () => {
     const baselineEv = challengeCC_SO_02.evidence.find((e) => e.id === 'ev-user-baseline')!;
     const content = baselineEv.content as {
       type: string;
-      employee: { name: string; currentStatus: string };
+      employee: { name: string; officialEmail: string; currentStatus: string };
       policy: { code: string; rules: string[] };
     };
     expect(content.type).toBe('directory');
-    expect(content.employee.name).toBe('Marcus Vance');
+    expect(content.employee.name).toBe('Niall Gallagher');
+    expect(content.employee.officialEmail).toBe('n.gallagher@veridian-logistics.example');
+    expect(content.employee.name).not.toBe('Marcus Vance'); // Marcus Vance is reserved for CEO EA in cc-ph-02
     expect(content.employee.currentStatus).toContain('On-Call');
     expect(content.employee.currentStatus).toContain('00:00 – 08:00 UTC');
+    expect(content.employee.currentStatus).toContain('eu-west-1');
+    expect(content.employee.currentStatus).toContain('eu-central-1');
     expect(content.policy.code).toBe('SOP SEC-204');
 
     const rulesStr = content.policy.rules.join(' ');
     expect(rulesStr).toContain('Proportionate Containment');
+    expect(rulesStr).toContain('eu-central-1');
+    expect(rulesStr).toContain('eu-west-1');
+  });
+
+  it('correctly associates Frankfurt with eu-central-1 and Ireland with eu-west-1 in telemetry and explanations', () => {
+    const timelineEv = challengeCC_SO_02.evidence.find((e) => e.id === 'ev-timeline')!;
+    const timelineStr = JSON.stringify(timelineEv.content);
+    expect(timelineStr).toContain('eu-central-1');
+    expect(timelineStr).toContain('eu-west-1');
+    expect(timelineStr).toContain('AKIA2048NGAL902');
+    expect(timelineStr).not.toContain('AKIA2048VANCE902');
+
+    // Confirm explanations specify Frankfurt as eu-central-1 and Ireland as eu-west-1
+    expect(challengeCC_SO_02.successExplanation).toContain('eu-central-1');
+    expect(challengeCC_SO_02.successExplanation).toContain('eu-west-1');
+    expect(challengeCC_SO_02.failureExplanation).toContain('eu-central-1');
+    expect(challengeCC_SO_02.failureExplanation).toContain('eu-west-1');
   });
 });
 
@@ -378,7 +399,7 @@ describe('cc-so-02 End-to-End Scoring Scenarios', () => {
   });
 
   it('failure explanation reinforces fact vs hypothesis discipline and proportionate response', () => {
-    expect(challengeCC_SO_02.failureExplanation).toContain('Marcus was on active secondary on-call rotation');
+    expect(challengeCC_SO_02.failureExplanation).toContain('Niall was on active secondary on-call rotation');
     expect(challengeCC_SO_02.failureExplanation).toContain('Device posture mismatch');
     expect(challengeCC_SO_02.failureExplanation).toContain('MFA push bombing');
     expect(challengeCC_SO_02.failureExplanation).toContain('Fact vs Hypothesis');

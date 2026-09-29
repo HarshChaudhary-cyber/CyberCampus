@@ -70,15 +70,33 @@ The application follows strict route hierarchy conventions:
 ### 5. The 3am Login (`cc-so-02`)
 - **Room**: Security Operations (`secops`)
 - **Difficulty**: Intermediate (100 pts, pass threshold: 70)
-- **Investigation**: Investigate an off-hours administrative authentication alert and IAM key generation on Senior DBA Marcus Vance's account.
+- **Investigation**: Investigate an off-hours administrative authentication alert and IAM key generation on Senior DBA Niall Gallagher's account.
 - **Evidence**:
   - Interactive multi-system timeline (Okta IdP, Duo MFA, ZTNA VPN, AWS CloudTrail) spanning 02:45–03:25 UTC.
-  - User Baseline Profile with hardware inventory (`VER-MBP-9021`), on-call rotation schedule, and SOP SEC-204 incident triage standards.
+  - User Baseline Profile with hardware inventory (`VER-MBP-9021`), on-call rotation schedule between Ireland (`eu-west-1`) and Frankfurt (`eu-central-1`), and SOP SEC-204 incident triage standards.
 - **Educational Objective**:
-  - Teach that off-hours access (03:14 UTC) and European IP geolocations alone do NOT prove compromise (on-call rotation, European database replicas).
-  - Identify genuine indicators of compromise: unmanaged Windows endpoint vs corporate Mac, commercial hosting ASN vs residential ISP, MFA push fatigue cluster (5 denials in 3.5m followed by 1 approval), and unauthorized programmatic IAM access key generation (`AKIA2048VANCE902`).
+  - Teach that off-hours access (03:14 UTC) and European IP geolocations alone do NOT prove compromise (on-call rotation, European database replicas in Frankfurt `eu-central-1`).
+  - Identify genuine indicators of compromise: unmanaged Windows endpoint vs corporate Mac, commercial hosting ASN vs residential ISP, MFA push fatigue cluster (5 denials in 3.5m followed by 1 approval), and unauthorized programmatic IAM access key generation (`AKIA2048NGAL902`).
   - Distinguish confirmed facts directly established by log evidence from plausible unproven hypotheses (such as how the password was acquired or why MFA was approved).
   - Select a proportionate response: immediately terminate the rogue session, deactivate the new access key, contact the user via out-of-band directory phone, mandate credential resets, and preserve audit logs without premature breach declarations or panic-wiping uninvolved devices.
+
+### 6. Incident Response Timeline (`cc-so-03`)
+- **Room**: Security Operations (`secops`)
+- **Difficulty**: Advanced (100 pts, pass threshold: 70)
+- **Investigation**: Piece together 11 multi-system log artifacts collected from edge WAF, web server Nginx, Linux auditd/EDR, internal network firewall, Active Directory KDC, and PostgreSQL database servers, initially presented in ingestion arrival order.
+- **Evidence**:
+  - Multi-System Telemetry Dossier with 11 out-of-order log records spanning 14:00–18:15 UTC.
+  - Incident Handling SOP IR-302 detailing attack chain reconstruction, foothold identification, and volatile evidence preservation protocols.
+- **Educational Objective**:
+  - Reconstruct the true chronological attack chain using an accessible ordering widget (supporting mouse, touch, and keyboard up/down controls with partial credit scoring):
+    1. Unauthenticated file upload exploit planting web shell `invoice_spec.pdf.phtml` (14:22 UTC)
+    2. Interactive reverse shell connection to external C2 `203.0.113.88:443` (14:23 UTC)
+    3. Local privilege escalation via SUID `pkexec` binary to root (15:02 UTC)
+    4. Internal network SYN sweep against database subnet `10.0.2.0/24` (15:35 UTC)
+    5. Bulk database extraction (`pg_dump`) archiving customer billing records (17:15 UTC)
+    6. High-volume encrypted data exfiltration (14.2 GB) to drop server `203.0.113.99` (17:42 UTC)
+  - Distinguish the initial entry vector (unauthenticated web application file upload) from subsequent internal lateral movement (Kerberoasting at 16:12 UTC or database querying at 16:48 UTC).
+  - Apply forensic containment discipline: never reboot or wipe live servers (which destroys volatile memory RAM and network artifacts); isolate hosts at the network layer, capture memory dumps, revoke compromised credentials, and archive logs.
 
 ---
 

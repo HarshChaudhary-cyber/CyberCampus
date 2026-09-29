@@ -138,7 +138,17 @@ function evalClassification(step: Step, submitted: StepResponse['submitted']): n
 // submitted: string[]
 function evalOrdering(step: Step, submitted: StepResponse['submitted']): number {
   const key = step.answerKey as { order: string[] };
-  const userOrder: string[] = Array.isArray(submitted) ? submitted : [];
+  let userOrder: string[] = [];
+  if (Array.isArray(submitted)) {
+    userOrder = submitted;
+  } else if (typeof submitted === 'string') {
+    try {
+      const parsed = JSON.parse(submitted);
+      if (Array.isArray(parsed)) userOrder = parsed;
+    } catch {
+      userOrder = [];
+    }
+  }
 
   if (!step.partialCreditAllowed) {
     if (userOrder.length !== key.order.length) return 0;

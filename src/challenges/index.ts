@@ -9,6 +9,7 @@ import { challengeCC_PH_02 } from './data/cc-ph-02';
 import { challengeCC_PH_03 } from './data/cc-ph-03';
 import { challengeCC_SO_01 } from './data/cc-so-01';
 import { challengeCC_SO_02 } from './data/cc-so-02';
+import { challengeCC_SO_03 } from './data/cc-so-03';
 
 // ── Challenge registry ────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export const ALL_CHALLENGES: Challenge[] = [
   challengeCC_PH_03,
   challengeCC_SO_01,
   challengeCC_SO_02,
+  challengeCC_SO_03,
 ];
 
 export const CHALLENGE_MAP: Record<string, Challenge> = Object.fromEntries(
@@ -87,4 +89,11 @@ export function getRoom(id: string): Room | undefined {
 }
 
 /** IDs of challenges that are fully built and playable */
-export const LIVE_CHALLENGE_IDS = new Set(['cc-ph-01', 'cc-ph-02', 'cc-ph-03', 'cc-so-01', 'cc-so-02']);
+export const LIVE_CHALLENGE_IDS = new Set([
+  'cc-ph-01',
+  'cc-ph-02',
+  'cc-ph-03',
+  'cc-so-01',
+  'cc-so-02',
+  'cc-so-03',
+]);
