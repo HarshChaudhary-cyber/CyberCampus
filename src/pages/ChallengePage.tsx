@@ -6,7 +6,7 @@ import {
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
-import { getChallenge } from '../challenges';
+import { getChallenge, getRoom } from '../challenges';
 import { buildStepResponses } from '../challenges/evaluator';
 import { HintDrawer } from '../components/ui/HintDrawer';
 import { Button } from '../components/ui/Button';
@@ -433,6 +433,183 @@ const LogViewer: React.FC<{ content: LogContent }> = ({ content }) => (
   </div>
 );
 
+type AlertQueueItemData = {
+  id: string;
+  timestamp: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  rule: string;
+  affectedSystem: string;
+  description: string;
+  context: string;
+  details?: {
+    sourceIp?: string;
+    destIp?: string;
+    processPath?: string;
+    commandLine?: string;
+    rawLog?: string;
+  };
+};
+
+type AlertQueueContent = {
+  isAlertQueue?: boolean;
+  shiftInfo?: {
+    team: string;
+    date: string;
+    queueName: string;
+  };
+  alerts: AlertQueueItemData[];
+};
+
+const AlertViewer: React.FC<{ content: AlertQueueContent }> = ({ content }) => {
+  const [activeAlertId, setActiveAlertId] = useState<string>(
+    content.alerts[0]?.id ?? ''
+  );
+
+  const activeAlert =
+    content.alerts.find((a) => a.id === activeAlertId) ?? content.alerts[0];
+
+  const severityClass = (sev: string) => {
+    switch (sev.toLowerCase()) {
+      case 'critical':
+        return styles['alertSeverity--critical'];
+      case 'high':
+        return styles['alertSeverity--high'];
+      case 'medium':
+        return styles['alertSeverity--medium'];
+      case 'low':
+      default:
+        return styles['alertSeverity--low'];
+    }
+  };
+
+  return (
+    <div className={styles.alertViewer} role="region" aria-label="SIEM Alert Triage Queue">
+      {/* Top bar */}
+      <div className={styles.alertHeader}>
+        <div className={styles.alertHeaderLeft}>
+          <ShieldAlert size={20} className={styles.alertIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.alertTitle}>{content.shiftInfo?.team ?? 'SIEM Triage Console'}</h3>
+            <p className={styles.alertShiftMeta}>
+              {content.shiftInfo?.queueName ?? 'Pending Shift Review'} • {content.shiftInfo?.date ?? 'Active Shift'}
+            </p>
+          </div>
+        </div>
+        <span className={styles.alertCountBadge}>{content.alerts.length} Pending Alerts</span>
+      </div>
+
+      <div className={styles.alertLayout}>
+        {/* Navigation list */}
+        <div className={styles.alertQueueNav} role="tablist" aria-label="Alert queue list">
+          {content.alerts.map((alert) => {
+            const isSelected = alert.id === activeAlert?.id;
+            return (
+              <button
+                key={alert.id}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                tabIndex={0}
+                className={`${styles.alertQueueItem} ${isSelected ? styles['alertQueueItem--active'] : ''}`}
+                onClick={() => setActiveAlertId(alert.id)}
+              >
+                <div className={styles.alertItemTop}>
+                  <span className={styles.alertItemId}>{alert.id.toUpperCase()}</span>
+                  <span className={`${styles.alertSeverityBadge} ${severityClass(alert.severity)}`}>
+                    {alert.severity}
+                  </span>
+                </div>
+                <div className={styles.alertItemRule}>{alert.rule}</div>
+                <div className={styles.alertItemTarget}>{alert.affectedSystem}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Detail pane */}
+        {activeAlert && (
+          <div className={styles.alertDetailPane} role="tabpanel" aria-label={`Details for alert ${activeAlert.id}`}>
+            <div className={styles.alertDetailHeader}>
+              <div className={styles.alertDetailTopRow}>
+                <h4 className={styles.alertDetailTitle}>{activeAlert.rule}</h4>
+                <span className={`${styles.alertSeverityBadge} ${severityClass(activeAlert.severity)}`}>
+                  {activeAlert.severity} Severity
+                </span>
+              </div>
+              <div className={styles.alertDetailMeta}>
+                <div className={styles.alertDetailMetaRow}>
+                  <span className={styles.alertDetailMetaKey}>Alert ID:</span>
+                  <span className={styles.alertDetailMetaVal}>{activeAlert.id.toUpperCase()}</span>
+                </div>
+                <div className={styles.alertDetailMetaRow}>
+                  <span className={styles.alertDetailMetaKey}>Timestamp:</span>
+                  <span className={styles.alertDetailMetaVal}>{activeAlert.timestamp}</span>
+                </div>
+                <div className={styles.alertDetailMetaRow}>
+                  <span className={styles.alertDetailMetaKey}>Target System:</span>
+                  <span className={styles.alertDetailMetaVal}>{activeAlert.affectedSystem}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Event Description */}
+            <div className={styles.alertSection}>
+              <h5 className={styles.alertSectionTitle}>Event Description & Detection</h5>
+              <p className={styles.alertSectionText}>{activeAlert.description}</p>
+            </div>
+
+            {/* Context & Notes */}
+            <div className={styles.alertContextCard}>
+              <h5 className={styles.alertContextTitle}>Shift Notes & Operational Context</h5>
+              <p className={styles.alertContextText}>{activeAlert.context}</p>
+            </div>
+
+            {/* Technical Parameters */}
+            {activeAlert.details && (
+              <div className={styles.alertTechnicalCard}>
+                <h5 className={styles.alertTechnicalTitle}>Technical Telemetry & Parameters</h5>
+                <table className={styles.alertTechnicalTable}>
+                  <tbody>
+                    {activeAlert.details.sourceIp && (
+                      <tr>
+                        <th scope="row">Source IP / Host</th>
+                        <td>{activeAlert.details.sourceIp}</td>
+                      </tr>
+                    )}
+                    {activeAlert.details.destIp && (
+                      <tr>
+                        <th scope="row">Destination IP</th>
+                        <td>{activeAlert.details.destIp}</td>
+                      </tr>
+                    )}
+                    {activeAlert.details.processPath && (
+                      <tr>
+                        <th scope="row">Process Path</th>
+                        <td>{activeAlert.details.processPath}</td>
+                      </tr>
+                    )}
+                    {activeAlert.details.commandLine && (
+                      <tr>
+                        <th scope="row">Command Line</th>
+                        <td>{activeAlert.details.commandLine}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+                {activeAlert.details.rawLog && (
+                  <div className={styles.alertRawLog}>
+                    {activeAlert.details.rawLog}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -450,7 +627,13 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
       return <CompanyDirectoryViewer content={raw as unknown as DirectoryContent} />;
     }
   }
-  if (item.type === 'log') return <LogViewer content={item.content as unknown as LogContent} />;
+  if (item.type === 'log') {
+    const raw = item.content as Record<string, unknown>;
+    if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
+      return <AlertViewer content={raw as unknown as AlertQueueContent} />;
+    }
+    return <LogViewer content={item.content as unknown as LogContent} />;
+  }
   return (
     <div style={{ padding: 'var(--space-4)', background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
       {JSON.stringify(item.content, null, 2)}
@@ -649,18 +832,26 @@ export const ChallengePage: React.FC = () => {
       return <Mail size={14} aria-hidden="true" />;
     }
     if (ev.type === 'policy' || ev.type === 'file') return <Building2 size={14} aria-hidden="true" />;
-    if (ev.type === 'log') return <FileText size={14} aria-hidden="true" />;
+    if (ev.type === 'log') {
+      const raw = ev.content as Record<string, unknown>;
+      if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
+        return <ShieldAlert size={14} aria-hidden="true" />;
+      }
+      return <FileText size={14} aria-hidden="true" />;
+    }
     return <FileText size={14} aria-hidden="true" />;
   });
 
+  const room = getRoom(challenge.roomId);
+
   return (
-    <div className={`${styles.page} ${challenge.roomId === 'phishing' ? 'room-phishing' : ''}`}>
+    <div className={`${styles.page} ${room?.accentClass ?? 'room-phishing'}`}>
       <div className={styles.content}>
         {/* Top bar */}
         <div className={styles.topBar}>
           <Link to={`/room/${challenge.roomId}`} className={styles.backLink}>
             <ArrowLeft size={15} aria-hidden="true" />
-            {challenge.roomId === 'phishing' ? 'Phishing Defense' : challenge.roomId}
+            {room?.title ?? challenge.roomId}
           </Link>
           <div className={styles.topMeta}>
             <span style={{

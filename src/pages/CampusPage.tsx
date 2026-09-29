@@ -71,7 +71,7 @@ export const CampusPage: React.FC = () => {
           </span>
           <h1 className={styles.title}>Choose a Room</h1>
           <p className={styles.subtitle}>
-            Each room contains three challenges. Start with Phishing Defense — the other rooms open as more challenges are built.
+            Each room contains three challenges. Explore Phishing Defense and Security Operations — the other rooms open as more challenges are built.
           </p>
         </header>
 
