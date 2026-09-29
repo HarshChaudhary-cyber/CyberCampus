@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
-  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity,
+  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -741,6 +741,158 @@ const TimelineViewer: React.FC<{ content: TimelineContent }> = ({ content }) => 
   );
 };
 
+type ExposedPortItem = {
+  id: string;
+  port: number;
+  protocol: 'tcp' | 'udp';
+  service: string;
+  version?: string;
+  boundAddress: string;
+  reachability: 'public' | 'internal' | 'localhost';
+  reachabilityLabel: string;
+  purpose: string;
+  businessContext: string;
+  status: 'safe' | 'unsafe';
+  banner?: string;
+};
+
+type ExposureReportContent = {
+  isExposureReport?: boolean;
+  scanTitle: string;
+  scanSubtitle: string;
+  targetHost: string;
+  targetIpPublic: string;
+  targetIpPrivate: string;
+  operatingSystem: string;
+  scanTimestamp: string;
+  scannerTool: string;
+  ports: ExposedPortItem[];
+};
+
+const ExposureReportViewer: React.FC<{ content: ExposureReportContent }> = ({ content }) => {
+  return (
+    <div className={styles.exposureViewer} role="region" aria-label="System Exposure and Port Audit Report">
+      {/* Header and system summary */}
+      <div className={styles.exposureHeader}>
+        <div className={styles.exposureHeaderLeft}>
+          <Network size={22} className={styles.exposureIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.exposureTitle}>{content.scanTitle}</h3>
+            <p className={styles.exposureSubtitle}>{content.scanSubtitle}</p>
+          </div>
+        </div>
+        <div className={styles.exposureCountBadge}>
+          {content.ports.length} Listening Ports
+        </div>
+      </div>
+
+      <div className={styles.exposureMetaGrid}>
+        <div className={styles.exposureMetaCard}>
+          <span className={styles.exposureMetaLabel}>Host Target</span>
+          <span className={styles.exposureMetaValue}>{content.targetHost}</span>
+        </div>
+        <div className={styles.exposureMetaCard}>
+          <span className={styles.exposureMetaLabel}>Public IP</span>
+          <span className={styles.exposureMetaValue}>{content.targetIpPublic}</span>
+        </div>
+        <div className={styles.exposureMetaCard}>
+          <span className={styles.exposureMetaLabel}>Internal IP</span>
+          <span className={styles.exposureMetaValue}>{content.targetIpPrivate}</span>
+        </div>
+        <div className={styles.exposureMetaCard}>
+          <span className={styles.exposureMetaLabel}>OS & Scanner</span>
+          <span className={styles.exposureMetaValue}>{content.operatingSystem} ({content.scannerTool})</span>
+        </div>
+      </div>
+
+      {/* Table of listening ports */}
+      <div className={styles.exposureTableWrapper}>
+        <table className={styles.exposureTable}>
+          <thead>
+            <tr>
+              <th scope="col">Port / Proto</th>
+              <th scope="col">Service & Version</th>
+              <th scope="col">Bound Interface</th>
+              <th scope="col">Reachability</th>
+              <th scope="col">Service Purpose & Context</th>
+            </tr>
+          </thead>
+          <tbody>
+            {content.ports.map((p) => {
+              const reachabilityBadgeClass =
+                p.reachability === 'public'
+                  ? styles['exposureBadge--public']
+                  : p.reachability === 'internal'
+                  ? styles['exposureBadge--internal']
+                  : styles['exposureBadge--localhost'];
+
+              return (
+                <tr key={p.id} className={styles.exposureRow}>
+                  <td className={styles.exposurePortCell}>
+                    <div className={styles.exposurePortGroup}>
+                      <span className={styles.exposurePortNum}>{p.port}</span>
+                      <span className={styles.exposureProtoTag}>{p.protocol.toUpperCase()}</span>
+                    </div>
+                  </td>
+                  <td className={styles.exposureServiceCell}>
+                    <div className={styles.exposureServiceName}>{p.service}</div>
+                    {p.version && <div className={styles.exposureServiceVer}>{p.version}</div>}
+                    {p.banner && <div className={styles.exposureBanner}>{p.banner}</div>}
+                  </td>
+                  <td className={styles.exposureBoundCell}>
+                    <code className={styles.exposureBoundCode}>{p.boundAddress}</code>
+                  </td>
+                  <td className={styles.exposureReachCell}>
+                    <span className={`${styles.exposureReachBadge} ${reachabilityBadgeClass}`}>
+                      {p.reachabilityLabel}
+                    </span>
+                  </td>
+                  <td className={styles.exposureContextCell}>
+                    <div className={styles.exposurePurpose}>{p.purpose}</div>
+                    <div className={styles.exposureBizCtx}>{p.businessContext}</div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+type PolicyDocumentContent = {
+  title: string;
+  code: string;
+  category?: string;
+  effectiveDate?: string;
+  classification?: string;
+  rules: string[];
+};
+
+const PolicyDocumentViewer: React.FC<{ content: PolicyDocumentContent }> = ({ content }) => (
+  <div className={styles.policyNotice} role="region" aria-label={`Security Policy: ${content.title}`}>
+    <div className={styles.policyHeader}>
+      <ShieldAlert size={18} className={styles.policyIcon} aria-hidden="true" />
+      <div>
+        <span className={styles.policyTitle}>{content.title} ({content.code})</span>
+        {(content.effectiveDate || content.classification) && (
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+            {content.classification && <span>{content.classification}</span>}
+            {content.classification && content.effectiveDate && <span> • </span>}
+            {content.effectiveDate && <span>Effective: {content.effectiveDate}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+    <ul className={styles.policyList}>
+      {content.rules.map((rule, idx) => (
+        <li key={idx} className={styles.policyRuleItem}>{rule}</li>
+      ))}
+    </ul>
+  </div>
+);
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -757,6 +909,13 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
     if (raw?.type === 'directory') {
       return <CompanyDirectoryViewer content={raw as unknown as DirectoryContent} />;
     }
+    if (raw?.rules && Array.isArray(raw.rules)) {
+      return <PolicyDocumentViewer content={raw as unknown as PolicyDocumentContent} />;
+    }
+  }
+  if (item.type === 'network') {
+    const raw = item.content as Record<string, unknown>;
+    return <ExposureReportViewer content={raw as unknown as ExposureReportContent} />;
   }
   if (item.type === 'log') {
     const raw = item.content as Record<string, unknown>;
@@ -1043,6 +1202,7 @@ export const ChallengePage: React.FC = () => {
       return <Mail size={14} aria-hidden="true" />;
     }
     if (ev.type === 'policy' || ev.type === 'file') return <Building2 size={14} aria-hidden="true" />;
+    if (ev.type === 'network') return <Network size={14} aria-hidden="true" />;
     if (ev.type === 'log') {
       const raw = ev.content as Record<string, unknown>;
       if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {

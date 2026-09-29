@@ -29,6 +29,7 @@ export type EvidenceType =
   | 'email'
   | 'log'
   | 'file'
+  | 'network'
   | 'network-packet'
   | 'image'
   | 'chat'

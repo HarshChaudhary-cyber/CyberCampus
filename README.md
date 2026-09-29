@@ -97,6 +97,20 @@ The application follows strict route hierarchy conventions:
     6. High-volume encrypted data exfiltration (14.2 GB) to drop server `203.0.113.99` (17:42 UTC)
   - Distinguish the initial entry vector (unauthenticated web application file upload) from subsequent internal lateral movement (Kerberoasting at 16:12 UTC or database querying at 16:48 UTC).
   - Apply forensic containment discipline: never reboot or wipe live servers (which destroys volatile memory RAM and network artifacts); isolate hosts at the network layer, capture memory dumps, revoke compromised credentials, and archive logs.
+### 7. The Open Port (`cc-nw-01`)
+- **Room**: Network Security (`network`)
+- **Difficulty**: Beginner (100 pts, pass threshold: 70)
+- **Investigation**: Review a simulated network exposure and port audit report for fictional perimeter gateway `web-gateway-01.veridian-logistics.example` across 8 listening services.
+- **Evidence**:
+  - Interactive Exposure Report Viewer showing 8 listening ports, protocols, service banners, bound network interfaces (`0.0.0.0`, `127.0.0.1`, `10.0.1.15`), and reachability classifications (`Public Internet`, `Internal LAN Only`, `Localhost Only`).
+  - Company Network Security Standard (SOP NET-101) mandating TLS encryption for public access, restricting remote administrative management to management VPNs, and requiring database and cache services to bind strictly to localhost or private subnets.
+- **Educational Objective**:
+  - Teach that a port number alone does not determine security posture: configuration, authentication, encryption, and network reachability matter.
+    - Safe/Intended public services: Port 80 (HTTP plaintext redirecting to HTTPS) and Port 443 (HTTPS TLS 1.3 reverse proxy).
+    - Unsafe public services: Port 21 (cleartext vsftpd 2.3.4 with backdoor signature), Port 22 (SSH on `0.0.0.0` with password auth and root login enabled), Port 6379 (Redis bound to `0.0.0.0` with no authentication), Port 8080 (Cockpit Web Admin over unencrypted HTTP).
+    - Safe internal/localhost services: Port 9100 (Prometheus node-exporter bound strictly to private LAN `10.0.1.15`) and Port 5432 (PostgreSQL bound strictly to loopback `127.0.0.1`).
+  - Distinguish genuine security remediation needs from intended services; selecting all ports or guessing indiscriminately cannot pass due to anti-guessing scoring (balanced 4 safe / 4 unsafe split).
+  - Formulate an effective administrative access remediation strategy: restrict SSH/management ingress to the dedicated corporate VPN (`10.0.100.0/24`) with public-key authentication, rather than relying on security-through-obscurity or exposing administrative dashboards to the open internet.
 
 ---
 
