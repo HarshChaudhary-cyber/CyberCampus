@@ -135,13 +135,13 @@ export const challengeCC_NW_02: Challenge = {
             ruleNum: 4,
             id: 'rule-4',
             sourceZone: 'ZONE-WAN (0.0.0.0/0)',
-            destZone: 'Internal Network (10.0.0.0/16 [All Translated Internal IPs])',
+            destZone: 'Internal Network (10.0.0.0/16 [Encompasses All Mapped Internal Targets])',
             service: 'Any (All Ports & Protocols)',
             action: 'ACCEPT',
             log: false,
             ticket: 'CHG-9941',
             description:
-              'Temporary diagnostic rule requested by 3rd-party logistics vendor. Because post-DNAT destination 10.0.0.0/16 encompasses all internal subnets, WAN packets mapped to any internal host are permitted on all ports. Ticket closed 3 weeks ago without decommissioning.',
+              'Temporary diagnostic rule requested by 3rd-party logistics vendor. Because post-DNAT destination 10.0.0.0/16 encompasses all internal subnets, WAN packets arriving at configured VIPs (such as the database VIP 198.51.100.50 on TCP 5432) are permitted through to their mapped internal destinations, shadowing Rule 5. Ticket closed 3 weeks ago without decommissioning.',
           },
           {
             ruleNum: 5,
@@ -218,7 +218,7 @@ export const challengeCC_NW_02: Challenge = {
           'Rule 3 (Least-Privilege Addressing): Using classful wildcards (such as 10.0.0.0/16) or service wildcards (Any) is strictly prohibited on perimeter boundaries. Rules must specify exact host IPs (/32) or minimal CIDR subnets and explicit destination ports. Administrative access rules must terminate strictly on authorized bastion hosts (/32).',
           'Rule 4 (Change Ticket Hygiene & Expiration): The existence of an approved change ticket does not validate an insecure configuration. Temporary troubleshooting rules must be tagged with a sunset timestamp and automatically decommissioned upon ticket completion.',
           'Rule 5 (Deduplication): Redundant and duplicate rules degrade firewall inspection performance and create operational confusion. Duplicate entries must be purged during regular audit cycles.',
-          'Rule 6 (Post-DNAT Security Policy Matching): Inbound perimeter security rules are evaluated post-DNAT. Filter rules match the translated internal destination IP, not the incoming public VIP. Overly broad internal destination subnets (e.g. 10.0.0.0/16) in WAN policies inadvertently permit traffic to all translated internal services.',
+          'Rule 6 (Post-DNAT Security Policy Matching): Inbound perimeter security rules are evaluated post-DNAT. Filter rules match the translated internal destination IP, not the incoming public VIP. Overly broad internal destination subnets (e.g. 10.0.0.0/16) in WAN policies inadvertently permit incoming traffic to mapped internal destinations and services—such as mapped database VIPs—bypassing intended downstream tier blocks.',
         ],
       },
     },
@@ -302,7 +302,7 @@ export const challengeCC_NW_02: Challenge = {
     {
       id: 'step-threat-impact',
       prompt:
-        'Under the firewall’s post-DNAT policy inspection model, analyze the operational and security impact of Rule 4 (CHG-9941). Because of its position and broad 10.0.0.0/16 destination, which traffic does Rule 4 actually permit through the firewall?',
+        'Under the firewall’s post-DNAT policy inspection model, analyze the operational and security impact of Rule 4 (CHG-9941). In conjunction with the perimeter VIP mappings, which traffic does Rule 4 actually permit through the firewall?',
       interaction: 'single-choice',
       partialCreditAllowed: false,
       pointValue: 30,
@@ -310,7 +310,7 @@ export const challengeCC_NW_02: Challenge = {
         {
           id: 'impact-unrestricted-ingress',
           label:
-            'Inbound WAN connections arriving at public VIPs translated to any internal host in 10.0.0.0/16 on any port (including database server 10.0.3.50, completely bypassing Rule 5’s drop action due to first-match evaluation).',
+            'Inbound WAN connections reaching the configured public VIP mappings and their services (including the database VIP on TCP 5432 translated to 10.0.3.50), completely shadowing Rule 5’s drop action due to first-match evaluation.',
         },
         {
           id: 'impact-ticket-validated',
@@ -404,10 +404,10 @@ export const challengeCC_NW_02: Challenge = {
 
   // ── Explanations ─────────────────────────────────────────────────────────
   successExplanation:
-    'Outstanding firewall audit! You accurately analyzed the ordered rule set, identified dangerous shadowing under the post-DNAT evaluation model, confirmed least-privilege scoping on administrative access, and authored a tightly scoped replacement rule.\n\nAudit Findings Breakdown:\n1. Network Ingress & Post-DNAT Shadowing:\n- The perimeter firewall terminates public WAN traffic on public VIPs (198.51.100.0/24). Destination NAT translates incoming packets to private 10.0.x.x addresses in pre-routing, and security policy rules are evaluated post-DNAT against these translated targets.\n- Rule 4 permitted WAN traffic to 10.0.0.0/16 on all ports. Because 10.0.3.0/24 (the database tier) falls inside 10.0.0.0/16, and firewalls evaluate top-to-bottom stopping at the first match, Rule 4 completely shadowed Rule 5 (which intended to drop external traffic to the database tier). External attackers could reach the internal databases directly!\n\n2. Management Access Scoping (Rule 3):\n- Rule 3 is properly scoped under SOP NET-201 because it restricts administrative SSH ingress from the management VPN subnet (10.0.100.0/24) exclusively to the designated administrative bastion host (10.0.100.10/32), avoiding broad subnet exposure.\n\n3. Change Ticket False Sense of Security (Rule 4):\n- Even though Rule 4 cited change ticket CHG-9941, the rule was grossly over-scoped and had remained active three weeks after the vendor finished work. Change tickets do not excuse insecure rules.\n\n4. Rule Hygiene & Redundancy (Rule 7):\n- Rule 7 was an exact duplicate of Rule 6, adding unnecessary processing overhead and administrative confusion.\n\n5. Least-Privilege Replacement Rule:\n- The replacement rule correctly locks down source to the vendor’s static IP (203.0.113.50/32), destination to the DMZ jump-host (10.0.1.25/32), port to TCP 22 (SSH), and action to ACCEPT. This eliminates the broad 10.0.0.0/16 grant and un-shadows Rule 5 so the database tier is once again protected.',
+    'Outstanding firewall audit! You accurately analyzed the ordered rule set, identified dangerous shadowing under the post-DNAT evaluation model, confirmed least-privilege scoping on administrative access, and authored a tightly scoped replacement rule.\n\nAudit Findings Breakdown:\n1. Network Ingress & Post-DNAT Shadowing:\n- The perimeter firewall terminates public WAN traffic on public VIPs (198.51.100.0/24). Destination NAT translates incoming packets to private 10.0.x.x addresses in pre-routing, and security policy rules are evaluated post-DNAT against these translated targets.\n- Rule 4 permitted WAN traffic to 10.0.0.0/16 on all ports. Because the configured database VIP translates to 10.0.3.50 (which falls inside 10.0.0.0/16), and firewalls evaluate top-to-bottom stopping at the first match, Rule 4 permits external connections reaching that database VIP on TCP 5432 and completely shadowed Rule 5 (which intended to drop external traffic to the database tier).\n\n2. Management Access Scoping (Rule 3):\n- Rule 3 is properly scoped under SOP NET-201 because it restricts administrative SSH ingress from the management VPN subnet (10.0.100.0/24) exclusively to the designated administrative bastion host (10.0.100.10/32), avoiding broad subnet exposure.\n\n3. Change Ticket False Sense of Security (Rule 4):\n- Even though Rule 4 cited change ticket CHG-9941, the rule was over-scoped and had remained active three weeks after the vendor finished work. Change tickets do not excuse insecure rules.\n\n4. Rule Hygiene & Redundancy (Rule 7):\n- Rule 7 was an exact duplicate of Rule 6, adding unnecessary processing overhead and administrative confusion.\n\n5. Least-Privilege Replacement Rule:\n- The replacement rule correctly locks down source to the vendor’s static IP (203.0.113.50/32), destination to the DMZ jump-host (10.0.1.25/32), port to TCP 22 (SSH), and action to ACCEPT. This eliminates the broad 10.0.0.0/16 grant and un-shadows Rule 5 so the database tier is once again protected.',
 
   failureExplanation:
-    'Effective firewall management requires understanding rule ordering, post-DNAT evaluation semantics, and the principle of least privilege.\n\nKey Firewall Principles:\n- Top-to-Bottom Evaluation: The first matching rule executes. Any specific deny rule (like Rule 5) placed below a broad allow rule (like Rule 4) is shadowed and completely ineffective.\n- Post-DNAT Policy Matching: On perimeter gateways with Virtual IPs, policy rules match against translated internal destination IPs. A broad destination like 10.0.0.0/16 matches any translated packet across DMZ, LAN, and Database tiers.\n- Least-Privilege Rule 3: Administrative access must specify exact bastion host IPs (/32) rather than entire internal networks.\n- Change Tickets: Having a ticket number (CHG-9941) does not mean a rule is safe or should remain open indefinitely.\n- Replacement Strategy: Restrict source to the verified external IP (203.0.113.50/32), destination to the DMZ jump-host (10.0.1.25/32), and service strictly to SSH (TCP 22).',
+    'Effective firewall management requires understanding rule ordering, post-DNAT evaluation semantics, and the principle of least privilege.\n\nKey Firewall Principles:\n- Top-to-Bottom Evaluation: The first matching rule executes. Any specific deny rule (like Rule 5) placed below a broad allow rule (like Rule 4) is shadowed and completely ineffective for overlapping traffic.\n- Post-DNAT Policy Matching: On perimeter gateways with Virtual IPs, policy rules match against translated internal destination IPs. A broad destination like 10.0.0.0/16 permits traffic reaching mapped internal destinations and services—such as the database VIP on TCP 5432—shadowing subsequent protection rules like Rule 5.\n- Least-Privilege Rule 3: Administrative access must specify exact bastion host IPs (/32) rather than entire internal networks.\n- Change Tickets: Having a ticket number (CHG-9941) does not mean a rule is safe or should remain open indefinitely.\n- Replacement Strategy: Restrict source to the verified external IP (203.0.113.50/32), destination to the DMZ jump-host (10.0.1.25/32), and service strictly to SSH (TCP 22).',
 
   shuffleItems: false,
 };

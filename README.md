@@ -123,10 +123,26 @@ The application follows strict route hierarchy conventions:
   - Understand post-DNAT inspection semantics and top-to-bottom rule processing (first-match-wins):
     - External WAN traffic arrives at public Virtual IPs (`198.51.100.0/24`) and translates to internal targets (`10.0.x.x`) in pre-routing; security filter rules match against translated internal destination IPs.
     - Rule 3 (`ZONE-MGMT -> Admin Bastion Host 10.0.100.10/32:22 ACCEPT`) is properly scoped to an exact `/32` administrative bastion, fully complying with SOP NET-201.
-    - Rule 4 (`ZONE-WAN -> Internal 10.0.0.0/16 Any ACCEPT`, citing closed ticket `CHG-9941`) is overly broad and completely shadows Rule 5 (`ZONE-WAN -> ZONE-DB 10.0.3.0/24 Any DROP`), allowing external packets arriving at database VIP `198.51.100.50` to bypass the perimeter block and access internal databases.
+    - Rule 4 (`ZONE-WAN -> Internal 10.0.0.0/16 Any ACCEPT`, citing closed ticket `CHG-9941`) is overly broad and completely shadows Rule 5 (`ZONE-WAN -> ZONE-DB 10.0.3.0/24 Any DROP`), allowing external packets reaching the database VIP `198.51.100.50` on TCP 5432 to bypass the perimeter block and access internal databases.
     - Rule 7 is a redundant duplicate of Rule 6, adding administrative confusion.
   - Reject the "change ticket fallacy": the existence of a ticket does not justify an insecure rule or permit leaving temporary troubleshooting rules active past project completion.
   - Construct a least-privilege replacement rule via the interactive Guided Form widget: specify the vendor's static IP (`203.0.113.50/32`), DMZ jump-host (`10.0.1.25/32`), port `TCP 22 (SSH)`, and action `ACCEPT`, fulfilling the vendor maintenance need while eliminating the shadow over Rule 5.
+
+### 9. Packet Trace Analysis (`cc-nw-03`)
+- **Room**: Network Security (`network`)
+- **Difficulty**: Advanced (100 pts, pass threshold: 70)
+- **Investigation**: Investigate a simulated 36-packet network capture recorded on core switch `sw-core-01.veridian-logistics.example` across internal LAN subnets.
+- **Evidence**:
+  - Interactive Packet Trace Viewer with protocol quick-filters (`All`, `DNS`, `Tunneling Only`, `TLS/HTTPS`, `NTP`), real-time search, packet dissection inspector (Ethernet, IPv4, UDP/TCP, DNS layers), and an exfiltration volume methodology guide.
+  - Network Forensic & Covert Channel Standard (SOP NET-301) establishing DNS tunneling indicators (burst frequency, non-dictionary high-entropy hexadecimal labels), false-positive differentiation (single TXT query verification), exfiltration volume formulas, and volatile memory preservation protocols.
+- **Educational Objective**:
+  - Detect covert DNS tunneling channels (MITRE ATT&CK T1071.004 / T1048.003):
+    - Identify compromised host `10.0.2.84` (`ws-fin-exec-84`) generating a continuous burst of 24 DNS queries with 32-character hexadecimal labels to external domain `*.sync-telemetry.example`.
+  - Avoid common false positives: distinguish legitimate, isolated DNS TXT lookups (such as `_spf.cloudvendor.example` on host `10.0.2.15`) from malicious query repetition and high-entropy label sequences.
+  - Calculate exfiltration volume accurately using reproducible formulas:
+    - Encoded Payload Size = 24 queries × 32 bytes/label = 768 bytes.
+    - Distinguish encoded payload size from total network frame traffic (24 × 102 bytes = 2,448 bytes) and raw decoded binary data (384 bytes).
+  - Execute proper incident containment: isolate the host at the switch port / VLAN layer and sinkhole the domain on internal resolvers without shutting down or wiping the live system, preserving volatile in-memory evidence.
 
 ---
 

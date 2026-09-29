@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
-  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network,
+  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -1085,6 +1085,283 @@ const FirewallRuleViewer: React.FC<{ content: FirewallPolicyContent }> = ({ cont
   );
 };
 
+type PacketTraceRowItem = {
+  packetNum: number;
+  timestamp: string;
+  sourceIp: string;
+  sourcePort: number;
+  destIp: string;
+  destPort: number;
+  protocol: 'DNS' | 'TLS' | 'NTP' | 'HTTP';
+  lengthBytes: number;
+  summary: string;
+  isTunnelingQuery?: boolean;
+  encodedPayloadLength?: number;
+  subdomainLabel?: string;
+  dnsDetails?: {
+    queryType: string;
+    queryName: string;
+    transactionId: string;
+    flags: string;
+    responseCode?: string;
+  };
+};
+
+type PacketTraceContent = {
+  isPacketTrace?: boolean;
+  captureFile: string;
+  captureInterface: string;
+  captureDuration: string;
+  totalPackets: number;
+  appliance: string;
+  methodologyNote: {
+    title: string;
+    formula: string;
+    chunkDefinition: string;
+    distinctions: string[];
+  };
+  packets: PacketTraceRowItem[];
+};
+
+const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content }) => {
+  const [filterProtocol, setFilterProtocol] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedPacketNum, setSelectedPacketNum] = useState<number | null>(null);
+
+  const filteredPackets = useMemo(() => {
+    return content.packets.filter((p) => {
+      if (filterProtocol !== 'all') {
+        if (filterProtocol === 'DNS' && p.protocol !== 'DNS') return false;
+        if (filterProtocol === 'TLS' && p.protocol !== 'TLS') return false;
+        if (filterProtocol === 'NTP' && p.protocol !== 'NTP') return false;
+        if (filterProtocol === 'tunneling' && !p.isTunnelingQuery) return false;
+      }
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchesIp = p.sourceIp.toLowerCase().includes(term) || p.destIp.toLowerCase().includes(term);
+        const matchesSummary = p.summary.toLowerCase().includes(term);
+        const matchesProto = p.protocol.toLowerCase().includes(term);
+        const matchesQuery = p.dnsDetails?.queryName?.toLowerCase().includes(term) || false;
+        if (!matchesIp && !matchesSummary && !matchesProto && !matchesQuery) return false;
+      }
+      return true;
+    });
+  }, [content.packets, filterProtocol, searchTerm]);
+
+  const selectedPacket = useMemo(() => {
+    return content.packets.find((p) => p.packetNum === selectedPacketNum) || null;
+  }, [content.packets, selectedPacketNum]);
+
+  return (
+    <div className={styles.packetViewer} role="region" aria-label="Network Packet Capture and Analysis">
+      {/* Capture Metadata Header */}
+      <div className={styles.packetHeader}>
+        <div className={styles.packetHeaderLeft}>
+          <Activity size={22} className={styles.packetIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.packetTitle}>{content.captureFile}</h3>
+            <p className={styles.packetMeta}>
+              <span>Interface: <strong>{content.captureInterface}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Window: <strong>{content.captureDuration}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Total Packets: <strong>{content.totalPackets}</strong></span>
+            </p>
+          </div>
+        </div>
+        <div className={styles.packetApplianceBadge}>
+          {content.appliance}
+        </div>
+      </div>
+
+      {/* Methodology & Calculation Note Card */}
+      {content.methodologyNote && (
+        <div className={styles.packetMethodologyCard}>
+          <div className={styles.packetMethodologyHeader}>
+            <FileText size={15} aria-hidden="true" />
+            <span className={styles.packetMethodologyTitle}>{content.methodologyNote.title}</span>
+          </div>
+          <div className={styles.packetMethodologyFormula}>
+            <code>{content.methodologyNote.formula}</code>
+          </div>
+          <p className={styles.packetMethodologyChunk}>{content.methodologyNote.chunkDefinition}</p>
+          <ul className={styles.packetMethodologyList}>
+            {content.methodologyNote.distinctions.map((d, i) => (
+              <li key={i}>{d}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Filter and Search Bar */}
+      <div className={styles.packetFilterBar}>
+        <div className={styles.packetSearchBox}>
+          <Search size={14} className={styles.packetSearchIcon} aria-hidden="true" />
+          <input
+            type="text"
+            className={styles.packetSearchInput}
+            placeholder="Search IP, domain, protocol, or summary..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Filter packets by keyword"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              className={styles.packetSearchClear}
+              onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <div className={styles.packetProtocolTabs}>
+          <button
+            type="button"
+            className={`${styles.packetProtoTab} ${filterProtocol === 'all' ? styles.packetProtoTabActive : ''}`}
+            onClick={() => setFilterProtocol('all')}
+          >
+            All ({content.packets.length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.packetProtoTab} ${filterProtocol === 'DNS' ? styles.packetProtoTabActive : ''}`}
+            onClick={() => setFilterProtocol('DNS')}
+          >
+            DNS ({content.packets.filter(p => p.protocol === 'DNS').length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.packetProtoTab} ${filterProtocol === 'tunneling' ? styles.packetProtoTabActive : ''}`}
+            onClick={() => setFilterProtocol('tunneling')}
+          >
+            Tunneling Only ({content.packets.filter(p => p.isTunnelingQuery).length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.packetProtoTab} ${filterProtocol === 'TLS' ? styles.packetProtoTabActive : ''}`}
+            onClick={() => setFilterProtocol('TLS')}
+          >
+            TLS/HTTPS ({content.packets.filter(p => p.protocol === 'TLS').length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.packetProtoTab} ${filterProtocol === 'NTP' ? styles.packetProtoTabActive : ''}`}
+            onClick={() => setFilterProtocol('NTP')}
+          >
+            NTP ({content.packets.filter(p => p.protocol === 'NTP').length})
+          </button>
+        </div>
+
+        <div className={styles.packetCountBadge}>
+          Showing {filteredPackets.length} of {content.packets.length} packets
+        </div>
+      </div>
+
+      {/* Packet Table */}
+      <div className={styles.packetTableWrapper}>
+        <table className={styles.packetTable}>
+          <thead>
+            <tr>
+              <th scope="col" style={{ width: '45px' }}>#</th>
+              <th scope="col" style={{ width: '95px' }}>Time</th>
+              <th scope="col" style={{ width: '150px' }}>Source</th>
+              <th scope="col" style={{ width: '150px' }}>Destination</th>
+              <th scope="col" style={{ width: '70px' }}>Proto</th>
+              <th scope="col" style={{ width: '65px' }}>Length</th>
+              <th scope="col">Info / Payload Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredPackets.map((pkt) => {
+              const isSelected = pkt.packetNum === selectedPacketNum;
+              return (
+                <tr
+                  key={pkt.packetNum}
+                  onClick={() => setSelectedPacketNum(isSelected ? null : pkt.packetNum)}
+                  className={`${styles.packetRow} ${isSelected ? styles.packetRowSelected : ''} ${pkt.isTunnelingQuery ? styles.packetRowTunneling : ''}`}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={isSelected}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedPacketNum(isSelected ? null : pkt.packetNum);
+                    }
+                  }}
+                >
+                  <td className={styles.packetNumCell}>{pkt.packetNum}</td>
+                  <td className={styles.packetTimeCell}>{pkt.timestamp}</td>
+                  <td className={styles.packetAddrCell}>
+                    <code>{pkt.sourceIp}:{pkt.sourcePort}</code>
+                  </td>
+                  <td className={styles.packetAddrCell}>
+                    <code>{pkt.destIp}:{pkt.destPort}</code>
+                  </td>
+                  <td>
+                    <span className={`${styles.packetProtoTag} ${styles[`proto_${pkt.protocol}`]}`}>
+                      {pkt.protocol}
+                    </span>
+                  </td>
+                  <td className={styles.packetLengthCell}>{pkt.lengthBytes} B</td>
+                  <td className={styles.packetSummaryCell}>
+                    <span>{pkt.summary}</span>
+                    {pkt.isTunnelingQuery && (
+                      <span className={styles.tunnelingTag}>32B Payload</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Selected Packet Inspection Inspector Panel */}
+      {selectedPacket && (
+        <div className={styles.packetInspector}>
+          <div className={styles.packetInspectorHeader}>
+            <div className={styles.packetInspectorTitle}>
+              Frame #{selectedPacket.packetNum}: Detailed Dissection ({selectedPacket.protocol}, {selectedPacket.lengthBytes} bytes)
+            </div>
+            <button
+              type="button"
+              className={styles.packetInspectorClose}
+              onClick={() => setSelectedPacketNum(null)}
+              aria-label="Close packet inspector"
+            >
+              ×
+            </button>
+          </div>
+          <div className={styles.packetInspectorBody}>
+            <div className={styles.packetLayerItem}>
+              <strong>Layer 2/3:</strong> Ethernet II, Src: <code>{selectedPacket.sourceIp}</code>, Dst: <code>{selectedPacket.destIp}</code>, IPv4
+            </div>
+            <div className={styles.packetLayerItem}>
+              <strong>Layer 4:</strong> {selectedPacket.protocol === 'TLS' ? 'TCP' : 'UDP'}, Src Port: <code>{selectedPacket.sourcePort}</code>, Dst Port: <code>{selectedPacket.destPort}</code>
+            </div>
+            {selectedPacket.dnsDetails && (
+              <div className={styles.packetLayerItem}>
+                <strong>Layer 7 (DNS):</strong> Transaction ID <code>{selectedPacket.dnsDetails.transactionId}</code>, Query Type: <code>{selectedPacket.dnsDetails.queryType}</code>, Name: <code>{selectedPacket.dnsDetails.queryName}</code>
+                {selectedPacket.isTunnelingQuery && (
+                  <div className={styles.packetTunnelingAlert}>
+                    <strong>Covert Channel Subdomain Analysis:</strong>
+                    <div>Encoded Chunk Label: <code>{selectedPacket.subdomainLabel}</code></div>
+                    <div>Chunk Length: <strong>{selectedPacket.encodedPayloadLength} characters (32 bytes ASCII)</strong></div>
+                    <div>Entropy: <strong>High Randomness / Hex-Encoded Ciphertext Chunk</strong></div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -1105,8 +1382,11 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
       return <PolicyDocumentViewer content={raw as unknown as PolicyDocumentContent} />;
     }
   }
-  if (item.type === 'network') {
+  if (item.type === 'network' || item.type === 'network-packet') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isPacketTrace || Array.isArray(raw?.packets)) {
+      return <PacketTraceViewer content={raw as unknown as PacketTraceContent} />;
+    }
     if (raw?.isFirewallPolicy || Array.isArray(raw?.rulesTable)) {
       return <FirewallRuleViewer content={raw as unknown as FirewallPolicyContent} />;
     }

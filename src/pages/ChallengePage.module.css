@@ -2433,4 +2433,402 @@
   color: var(--color-text-secondary);
 }
 
+/* ── Packet Trace Viewer ── */
+.packetViewer {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.packetHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.packetHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.packetIcon {
+  color: #38bdf8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.packetTitle {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.packetMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.packetApplianceBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* Methodology & Calculation Note Card */
+.packetMethodologyCard {
+  background: rgba(56, 189, 248, 0.04);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.packetMethodologyHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #38bdf8;
+}
+
+.packetMethodologyTitle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.packetMethodologyFormula {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #38bdf8;
+  color: #e0f2fe;
+}
+
+.packetMethodologyChunk {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.packetMethodologyList {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Filter and Search Bar */
+.packetFilterBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.packetSearchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.packetSearchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.packetSearchInput {
+  width: 100%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 6px 30px 6px 30px;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.packetSearchInput:focus {
+  border-color: #38bdf8;
+}
+
+.packetSearchClear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.packetProtocolTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.packetProtoTab {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.packetProtoTab:hover {
+  color: var(--color-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.packetProtoTabActive {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+.packetCountBadge {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  align-self: flex-end;
+}
+
+/* Packet Table */
+.packetTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.packetTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: left;
+}
+
+.packetTable th {
+  position: sticky;
+  top: 0;
+  background: #111827;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.packetTable td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.packetRow {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.packetRow:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.packetRowSelected {
+  background: rgba(56, 189, 248, 0.08) !important;
+  border-left: 2px solid #38bdf8;
+}
+
+.packetRowTunneling {
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.packetNumCell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.packetTimeCell {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.packetAddrCell code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.packetProtoTag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.proto_DNS {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.proto_TLS {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.proto_NTP {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.proto_HTTP {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.packetLengthCell {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.packetSummaryCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.tunnelingTag {
+  font-size: 9px;
+  font-weight: 700;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+/* Packet Inspector */
+.packetInspector {
+  background: #0f172a;
+  border: 1px solid #38bdf8;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.packetInspectorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  padding-bottom: 6px;
+}
+
+.packetInspectorTitle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.packetInspectorClose {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.packetInspectorBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.packetLayerItem code {
+  font-family: var(--font-mono);
+  color: #e0f2fe;
+}
+
+.packetTunnelingAlert {
+  margin-top: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.packetTunnelingAlert code {
+  font-family: var(--font-mono);
+  color: #fca5a5;
+  word-break: break-all;
+}
+
 

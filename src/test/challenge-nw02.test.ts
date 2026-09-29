@@ -66,13 +66,10 @@ describe('cc-nw-02 registration & metadata', () => {
     expect(ch?.roomId).toBe('network');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS alongside cc-nw-01', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS alongside cc-nw-01 and cc-nw-03', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-nw-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-nw-02')).toBe(true);
-  });
-
-  it('leaves cc-nw-03 as coming soon (not live)', () => {
-    expect(LIVE_CHALLENGE_IDS.has('cc-nw-03')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-nw-03')).toBe(true);
   });
 
   it('preserves all seven previously built live challenges', () => {
@@ -609,8 +606,9 @@ describe('cc-nw-02 educational explanations', () => {
     expect(disp1).toContain('Unnecessary (Redundant Duplicate)');
 
     const disp2 = getCorrectAnswerDisplay(stepImpact);
-    expect(disp2).toContain('Inbound WAN connections arriving at public VIPs translated to any internal host in 10.0.0.0/16');
-    expect(disp2).toContain('completely bypassing Rule 5’s drop action');
+    expect(disp2).toContain('Inbound WAN connections reaching the configured public VIP mappings');
+    expect(disp2).toContain('database VIP on TCP 5432');
+    expect(disp2).toContain('completely shadowing Rule 5’s drop action');
 
     const disp3 = getCorrectAnswerDisplay(stepReplacement);
     expect(disp3).toContain('Source IP / Network: Vendor Office Static IP (203.0.113.50/32)');

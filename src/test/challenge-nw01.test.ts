@@ -43,8 +43,10 @@ describe('cc-nw-01 registration & metadata', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-nw-01')).toBe(true);
   });
 
-  it('leaves cc-nw-03 as coming soon (not live)', () => {
-    expect(LIVE_CHALLENGE_IDS.has('cc-nw-03')).toBe(false);
+  it('is marked as live alongside cc-nw-02 and cc-nw-03', () => {
+    expect(LIVE_CHALLENGE_IDS.has('cc-nw-01')).toBe(true);
+    expect(LIVE_CHALLENGE_IDS.has('cc-nw-02')).toBe(true);
+    expect(LIVE_CHALLENGE_IDS.has('cc-nw-03')).toBe(true);
   });
 
   it('preserves all six previously built challenges in LIVE_CHALLENGE_IDS', () => {
