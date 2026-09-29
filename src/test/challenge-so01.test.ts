@@ -122,6 +122,36 @@ describe('cc-so-01 evidence integrity', () => {
     expect(rulesStr).toContain('CHG-8910'); // vuln scanner
     expect(rulesStr).toContain('SEC-3301'); // veeam backup rotation
     expect(rulesStr).toContain('INFRA-9042'); // AWS cloud maintenance
+    expect(rulesStr).toContain('AmazonEKSClusterAutoscalerPolicy');
+  });
+
+  it('ALT-208 uses a narrowly scoped, least-privilege policy rather than excessive AdministratorAccess', () => {
+    const alertsEv = challengeCC_SO_01.evidence.find((e) => e.id === 'ev-alerts')!;
+    const content = alertsEv.content as {
+      alerts: Array<{
+        id: string;
+        rule: string;
+        description: string;
+        context: string;
+        details?: { rawLog?: string; commandLine?: string };
+      }>;
+    };
+    const alt208 = content.alerts.find((a) => a.id === 'alt-208')!;
+    expect(alt208).toBeDefined();
+
+    // Verify least-privilege policy is used
+    expect(alt208.description).toContain('AmazonEKSClusterAutoscalerPolicy');
+    expect(alt208.description).not.toContain('AdministratorAccess');
+    expect(alt208.context).toContain('least-privilege');
+    expect(alt208.context).toContain('INFRA-9042');
+    expect(alt208.details?.commandLine).toContain('AmazonEKSClusterAutoscalerPolicy');
+    expect(alt208.details?.rawLog).toContain('AmazonEKSClusterAutoscalerPolicy');
+
+    // Confirm step item label is updated
+    const step1 = challengeCC_SO_01.steps[0];
+    const item208 = step1.items.find((i) => i.id === 'alt-208')!;
+    expect(item208.label).toContain('AutoScaling Policy Attached');
+    expect(item208.label).not.toContain('Administrative Policy');
   });
 });
 
@@ -331,15 +361,18 @@ describe('cc-so-01 End-to-End Scoring & Passing Scenarios', () => {
     expect(challengeCC_SO_01.failureExplanation).toContain('ALT-207');
     expect(challengeCC_SO_01.failureExplanation).toContain('ALT-208');
     expect(challengeCC_SO_01.failureExplanation).toContain('volatile RAM');
+    expect(challengeCC_SO_01.failureExplanation).toContain('Never dismiss an IAM alert based solely on the existence of a change ticket');
   });
 
-  it('success explanations provide in-depth operational analysis and containment justification', () => {
+  it('success explanations provide in-depth operational analysis, containment justification, and IAM least privilege rationale', () => {
     expect(challengeCC_SO_01.successExplanation).toContain('credential theft');
     expect(challengeCC_SO_01.successExplanation).toContain('CHG-8910');
     expect(challengeCC_SO_01.successExplanation).toContain('impossible travel');
     expect(challengeCC_SO_01.successExplanation).toContain('Kerberoasting');
     expect(challengeCC_SO_01.successExplanation).toContain('exfiltration');
     expect(challengeCC_SO_01.successExplanation).toContain('EDR containment');
+    expect(challengeCC_SO_01.successExplanation).toContain('AmazonEKSClusterAutoscalerPolicy');
+    expect(challengeCC_SO_01.successExplanation).toContain('AdministratorAccess should NEVER be dismissed');
   });
 });
 

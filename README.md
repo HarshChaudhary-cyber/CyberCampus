@@ -62,7 +62,8 @@ The application follows strict route hierarchy conventions:
   - Reusable SIEM Alert Queue viewer with interactive alert selection, severity indicators, affected hosts, timestamps, detection rules, operational context, and technical telemetry (source IPs, process paths, command lines, raw log snippets).
   - Shift Handover & Maintenance Calendar with approved change tickets (`CHG-8910`, `SEC-3301`, `INFRA-9042`) and SOC SOP-102 triage standards.
 - **Educational Objective**:
-  - Distinguish genuine security threats (`ALT-201` LSASS memory dump, `ALT-203` impossible travel anomaly, `ALT-205` Kerberoasting RC4 ticket spike, `ALT-207` active rclone data exfiltration) from explained benign operational activity (`ALT-202` vulnerability scanner, `ALT-204` service account rotation failure, `ALT-206` WAF perimeter block, `ALT-208` approved cloud IAM maintenance).
+  - Distinguish genuine security threats (`ALT-201` LSASS memory dump, `ALT-203` impossible travel anomaly, `ALT-205` Kerberoasting RC4 ticket spike, `ALT-207` active rclone data exfiltration) from explained benign operational activity (`ALT-202` vulnerability scanner, `ALT-204` service account rotation failure, `ALT-206` WAF perimeter block, `ALT-208` approved least-privilege cloud IAM autoscaling maintenance).
+  - Emphasizes the critical IAM principle that excessive permissions (like `AdministratorAccess`) must never be dismissed simply because a change ticket exists; dismissal of `ALT-208` is only justified because the attached policy was verified to be strictly least-privilege (`AmazonEKSClusterAutoscalerPolicy`).
   - Anti-guessing scoring ensures a blanket "Investigate" or "Dismiss" strategy cannot pass or earn full credit (balanced 4/4 split).
   - Choose the safest immediate containment action for critical data exfiltration (isolate host via EDR, terminate process, preserve volatile memory) over destructive reboots or delayed email queries.
 
