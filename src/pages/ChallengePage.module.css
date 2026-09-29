@@ -2823,4 +2823,457 @@
   color: #e0f2fe;
 }
 
+/* ── File System Viewer (cc-df-01) ── */
+.fsViewer {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fsHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.fsIcon {
+  color: #22c55e;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.fsTitle {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.fsMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.fsCaseBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.fsGuidanceCard {
+  background: rgba(34, 197, 94, 0.04);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fsGuidanceHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #22c55e;
+}
+
+.fsGuidanceTitle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fsGuidanceList {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fsFilterBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fsSearchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.fsSearchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.fsSearchInput {
+  width: 100%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 6px 30px 6px 30px;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.fsSearchInput:focus {
+  border-color: #22c55e;
+}
+
+.fsSearchClear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.fsFilterTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fsFilterTab {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.fsFilterTab:hover {
+  color: var(--color-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.fsFilterTabActive {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: #22c55e;
+}
+
+.fsCountBadge {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  align-self: flex-end;
+}
+
+/* Split Pane Layout */
+.fsLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .fsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fsTableColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.fsTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.fsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: left;
+}
+
+.fsTable th {
+  position: sticky;
+  top: 0;
+  background: #111827;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.fsTable td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.fsRow {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.fsRow:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fsRowSelected {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-left: 2px solid #22c55e;
+}
+
+.fsStatusTag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fsStatusDeleted {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.fsStatusActive {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.fsNameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fsFileNameRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fsFileIconDeleted {
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.fsFileIconActive {
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+.fsFileName {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.fsFilePath {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+.fsSizeCell {
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.fsTimeCell {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Inspector Column */
+.fsInspectorColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.fsInspector {
+  background: #0b1329;
+  border: 1px solid #22c55e;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fsInspectorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+  padding-bottom: 6px;
+}
+
+.fsInspectorTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.fsInspectorFilename {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.fsMetaGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.fsMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 4px;
+}
+
+.fsMetaLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fsMetaValue {
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.fsMetaValue code {
+  color: #86efac;
+}
+
+.fsTimestampsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.fsTimestampsBlock code {
+  color: #86efac;
+}
+
+.fsHashValue {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #86efac;
+  word-break: break-all;
+}
+
+.fsPreviewSection {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fsPreviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.fsPreviewContent {
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #dcfce7;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.fsEmptyInspector {
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 

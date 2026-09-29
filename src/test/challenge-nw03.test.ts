@@ -520,5 +520,16 @@ describe('cc-nw-03 packet viewer neutral behavior & absence of answer spoilers (
     expect(successExplanation).toContain('384 bytes');
     expect(successExplanation).toContain('2,448 bytes');
   });
+
+  it('feedback and hints describe 102 bytes as total simulated frame length per packet, not frame overhead', () => {
+    const { hints, successExplanation, failureExplanation } = challengeCC_NW_03;
+    const allFeedback = [...hints, successExplanation, failureExplanation].join(' ');
+
+    expect(allFeedback).not.toContain('102 bytes of frame overhead');
+    expect(allFeedback).not.toContain('102 bytes frame overhead');
+    expect(allFeedback).toContain('102 bytes');
+    expect(allFeedback).toContain('total simulated frame length');
+  });
 });
+
 

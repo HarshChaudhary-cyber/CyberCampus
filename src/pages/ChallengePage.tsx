@@ -4,6 +4,7 @@ import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
+  HardDrive, File, Trash2,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -12,6 +13,7 @@ import { HintDrawer } from '../components/ui/HintDrawer';
 import { Button } from '../components/ui/Button';
 import { NotFoundPage } from './NotFoundPage';
 import type { EvidenceItem, Step, StepResponse } from '../types';
+import type { FileSystemContent } from '../challenges/data/cc-df-01';
 import styles from './ChallengePage.module.css';
 
 // ── Evidence Viewers ──────────────────────────────────────────────────────────
@@ -1355,6 +1357,255 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
   );
 };
 
+const FileSystemViewer: React.FC<{ content: FileSystemContent }> = ({ content }) => {
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(
+    content.files.length > 0 ? content.files[0].id : null
+  );
+  const [statusFilter, setStatusFilter] = useState<'all' | 'deleted' | 'active'>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const filteredFiles = useMemo(() => {
+    return content.files.filter((file) => {
+      if (statusFilter !== 'all' && file.status !== statusFilter) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const query = searchTerm.toLowerCase();
+        const matchName = file.name.toLowerCase().includes(query);
+        const matchPath = file.path.toLowerCase().includes(query);
+        const matchType = file.fileType.toLowerCase().includes(query);
+        const matchNotes = file.notes?.toLowerCase().includes(query) ?? false;
+        if (!matchName && !matchPath && !matchType && !matchNotes) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [content.files, statusFilter, searchTerm]);
+
+  const selectedFile = useMemo(() => {
+    return content.files.find((f) => f.id === selectedFileId) || null;
+  }, [content.files, selectedFileId]);
+
+  return (
+    <div className={styles.fsViewer} role="region" aria-label="Workstation Filesystem Triage and Deleted File Recovery">
+      {/* Header */}
+      <div className={styles.fsHeader}>
+        <div className={styles.fsHeaderLeft}>
+          <HardDrive size={22} className={styles.fsIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.fsTitle}>{content.imageFileName}</h3>
+            <p className={styles.fsMeta}>
+              <span>Host: <strong>{content.targetDevice}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>FS: <strong>{content.filesystemType}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Scanned Records: <strong>{content.totalRecordsScanned.toLocaleString()}</strong></span>
+            </p>
+          </div>
+        </div>
+        <div className={styles.fsCaseBadge}>
+          {content.caseReference}
+        </div>
+      </div>
+
+      {/* Guidance Note Card */}
+      {content.guidanceNote && (
+        <div className={styles.fsGuidanceCard}>
+          <div className={styles.fsGuidanceHeader}>
+            <FileText size={15} aria-hidden="true" />
+            <span className={styles.fsGuidanceTitle}>{content.guidanceNote.title}</span>
+          </div>
+          <ul className={styles.fsGuidanceList}>
+            {content.guidanceNote.rules.map((rule, idx) => (
+              <li key={idx}>{rule}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Filter and Search Bar */}
+      <div className={styles.fsFilterBar}>
+        <div className={styles.fsSearchBox}>
+          <Search size={14} className={styles.fsSearchIcon} aria-hidden="true" />
+          <input
+            type="text"
+            className={styles.fsSearchInput}
+            placeholder="Search path, filename, type, or keyword..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Filter filesystem by keyword"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              className={styles.fsSearchClear}
+              onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <div className={styles.fsFilterTabs}>
+          <button
+            type="button"
+            className={`${styles.fsFilterTab} ${statusFilter === 'all' ? styles.fsFilterTabActive : ''}`}
+            onClick={() => setStatusFilter('all')}
+          >
+            All Files ({content.files.length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.fsFilterTab} ${statusFilter === 'deleted' ? styles.fsFilterTabActive : ''}`}
+            onClick={() => setStatusFilter('deleted')}
+          >
+            Deleted / Carved ({content.files.filter((f) => f.status === 'deleted').length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.fsFilterTab} ${statusFilter === 'active' ? styles.fsFilterTabActive : ''}`}
+            onClick={() => setStatusFilter('active')}
+          >
+            Active / Allocated ({content.files.filter((f) => f.status === 'active').length})
+          </button>
+        </div>
+
+        <div className={styles.fsCountBadge}>
+          Showing {filteredFiles.length} of {content.files.length} files
+        </div>
+      </div>
+
+      {/* Split Pane: File Table + Inspector */}
+      <div className={styles.fsLayout}>
+        {/* File Table Column */}
+        <div className={styles.fsTableColumn}>
+          <div className={styles.fsTableWrapper}>
+            <table className={styles.fsTable}>
+              <thead>
+                <tr>
+                  <th scope="col" style={{ width: '80px' }}>Status</th>
+                  <th scope="col">File Name & Path</th>
+                  <th scope="col" style={{ width: '70px' }}>Size</th>
+                  <th scope="col" style={{ width: '130px' }}>Modified / Deleted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredFiles.map((file) => {
+                  const isSelected = file.id === selectedFileId;
+                  const isDeleted = file.status === 'deleted';
+                  return (
+                    <tr
+                      key={file.id}
+                      onClick={() => setSelectedFileId(file.id)}
+                      className={`${styles.fsRow} ${isSelected ? styles.fsRowSelected : ''}`}
+                      tabIndex={0}
+                      role="button"
+                      aria-pressed={isSelected}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedFileId(file.id);
+                        }
+                      }}
+                    >
+                      <td>
+                        <span className={`${styles.fsStatusTag} ${isDeleted ? styles.fsStatusDeleted : styles.fsStatusActive}`}>
+                          {isDeleted ? 'Deleted' : 'Active'}
+                        </span>
+                      </td>
+                      <td className={styles.fsNameCell}>
+                        <div className={styles.fsFileNameRow}>
+                          {isDeleted ? (
+                            <Trash2 size={13} className={styles.fsFileIconDeleted} aria-hidden="true" />
+                          ) : (
+                            <File size={13} className={styles.fsFileIconActive} aria-hidden="true" />
+                          )}
+                          <span className={styles.fsFileName}>{file.name}</span>
+                        </div>
+                        <span className={styles.fsFilePath}>{file.path}</span>
+                      </td>
+                      <td className={styles.fsSizeCell}>{file.sizeFormatted}</td>
+                      <td className={styles.fsTimeCell}>
+                        {isDeleted ? file.deletionTime.replace(' UTC', '') : file.modifiedTime.replace(' UTC', '')}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Inspector & Recovered Content Preview Column */}
+        <div className={styles.fsInspectorColumn}>
+          {selectedFile ? (
+            <div className={styles.fsInspector}>
+              <div className={styles.fsInspectorHeader}>
+                <div className={styles.fsInspectorTitleGroup}>
+                  <span className={`${styles.fsStatusTag} ${selectedFile.status === 'deleted' ? styles.fsStatusDeleted : styles.fsStatusActive}`}>
+                    {selectedFile.status === 'deleted' ? 'Deleted / Carved' : 'Active / Allocated'}
+                  </span>
+                  <span className={styles.fsInspectorFilename}>{selectedFile.name}</span>
+                </div>
+              </div>
+
+              <div className={styles.fsMetaGrid}>
+                <div className={styles.fsMetaItem}>
+                  <span className={styles.fsMetaLabel}>Canonical Path</span>
+                  <code className={styles.fsMetaValue}>{selectedFile.path}</code>
+                </div>
+                <div className={styles.fsMetaItem}>
+                  <span className={styles.fsMetaLabel}>Allocation State</span>
+                  <span className={styles.fsMetaValue}>
+                    {selectedFile.allocated ? 'Allocated Inode (Active)' : 'Unallocated Clusters (MFT Flag 0x00)'}
+                  </span>
+                </div>
+                <div className={styles.fsMetaItem}>
+                  <span className={styles.fsMetaLabel}>File Size</span>
+                  <span className={styles.fsMetaValue}>{selectedFile.sizeFormatted} ({selectedFile.sizeBytes.toLocaleString()} bytes)</span>
+                </div>
+                <div className={styles.fsMetaItem}>
+                  <span className={styles.fsMetaLabel}>File Type & Header</span>
+                  <span className={styles.fsMetaValue}>{selectedFile.fileType} (Magic: <code>{selectedFile.signatureMagic}</code>)</span>
+                </div>
+                <div className={styles.fsMetaItem}>
+                  <span className={styles.fsMetaLabel}>MACB Timestamps</span>
+                  <div className={styles.fsTimestampsBlock}>
+                    <div>Created: <code>{selectedFile.createdTime}</code></div>
+                    <div>Modified: <code>{selectedFile.modifiedTime}</code></div>
+                    <div>Deleted: <code>{selectedFile.deletionTime}</code></div>
+                  </div>
+                </div>
+                <div className={styles.fsMetaItem}>
+                  <span className={styles.fsMetaLabel}>SHA-256 Checksum</span>
+                  <code className={styles.fsHashValue}>{selectedFile.sha256}</code>
+                </div>
+              </div>
+
+              {/* Recovered Content Preview */}
+              <div className={styles.fsPreviewSection}>
+                <div className={styles.fsPreviewHeader}>
+                  <FileText size={13} aria-hidden="true" />
+                  <span>Recovered Content Preview</span>
+                </div>
+                <pre className={styles.fsPreviewContent}>
+                  <code>{selectedFile.preview}</code>
+                </pre>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.fsEmptyInspector}>
+              <p>Select any file from the triage list to inspect its metadata and recovered content preview.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -1368,6 +1619,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'policy' || item.type === 'file') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isFileSystem || Array.isArray(raw?.files)) {
+      return <FileSystemViewer content={raw as unknown as FileSystemContent} />;
+    }
     if (raw?.type === 'directory') {
       return <CompanyDirectoryViewer content={raw as unknown as DirectoryContent} />;
     }
