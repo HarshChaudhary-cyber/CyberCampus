@@ -266,5 +266,10 @@ export function getCorrectAnswerDisplay(step: Step): string {
       })
       .join('\n');
   }
+  if (step.interaction === 'guided-form') {
+    return step.items
+      .map((i) => `${i.label}: ${(key as Record<string, string>)[i.id] ?? ''}`)
+      .join('\n');
+  }
   return JSON.stringify(key);
 }

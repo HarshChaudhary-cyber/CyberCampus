@@ -21,7 +21,7 @@ const CHALLENGE_DESCRIPTIONS: Record<string, string> = {
   'cc-so-02': 'Investigate an off-hours administrative login, MFA fatigue, and rogue IAM keys.',
   'cc-so-03': 'Reconstruct a multi-system incident timeline, identify initial access, and execute containment.',
   'cc-nw-01': 'Audit listening services and public exposures on a company server.',
-  'cc-nw-02': 'Audit 10 firewall rules and fix the dangerous ones.',
+  'cc-nw-02': 'Audit 9 ordered firewall rules, uncover shadowed entries, and build a replacement rule.',
   'cc-nw-03': 'Find DNS tunnelling hidden in a packet trace.',
   'cc-df-01': 'Identify exfiltrated data in deleted file metadata.',
   'cc-df-02': 'Reconstruct a browser history with tampered timestamps.',

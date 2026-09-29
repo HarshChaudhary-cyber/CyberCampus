@@ -893,6 +893,145 @@ const PolicyDocumentViewer: React.FC<{ content: PolicyDocumentContent }> = ({ co
   </div>
 );
 
+type FirewallZone = {
+  id: string;
+  name: string;
+  cidr: string;
+  trustLevel: string;
+  description: string;
+};
+
+type FirewallRuleItem = {
+  ruleNum: number;
+  id: string;
+  sourceZone: string;
+  destZone: string;
+  service: string;
+  action: 'ACCEPT' | 'DROP' | 'REJECT';
+  log: boolean;
+  ticket?: string;
+  description: string;
+};
+
+type FirewallPolicyContent = {
+  isFirewallPolicy?: boolean;
+  applianceName: string;
+  policyName: string;
+  evaluationModel: string;
+  lastAuditDate: string;
+  firewallVendor: string;
+  zones: FirewallZone[];
+  rulesTable: FirewallRuleItem[];
+};
+
+const FirewallRuleViewer: React.FC<{ content: FirewallPolicyContent }> = ({ content }) => {
+  return (
+    <div className={styles.firewallViewer} role="region" aria-label="Enterprise Firewall Policy and Ruleset">
+      {/* Header and Appliance Meta */}
+      <div className={styles.firewallHeader}>
+        <div className={styles.firewallHeaderLeft}>
+          <Network size={22} className={styles.firewallIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.firewallTitle}>{content.policyName}</h3>
+            <p className={styles.firewallSubtitle}>
+              {content.applianceName} • {content.firewallVendor}
+            </p>
+          </div>
+        </div>
+        <div className={styles.firewallCountBadge}>
+          {content.rulesTable.length} Ordered Rules
+        </div>
+      </div>
+
+      {/* Evaluation Semantics Alert Banner */}
+      <div className={styles.firewallSemanticsBanner}>
+        <div className={styles.firewallSemanticsTitle}>
+          <ShieldAlert size={16} aria-hidden="true" />
+          <span>Evaluation Semantics: {content.evaluationModel}</span>
+        </div>
+        <p className={styles.firewallSemanticsText}>
+          Traffic is evaluated sequentially from Rule #1 downwards. The <strong>first rule that matches</strong> source, destination, and service executes immediately. Subsequent rules are never evaluated. Unmatched traffic hits the default drop rule.
+        </p>
+      </div>
+
+      {/* Network Zone Legend Cards */}
+      <div className={styles.firewallZonesSection}>
+        <h4 className={styles.firewallSectionHeading}>Enterprise Network Zones</h4>
+        <div className={styles.firewallZoneGrid}>
+          {content.zones.map((zone) => (
+            <div key={zone.id} className={styles.firewallZoneCard}>
+              <div className={styles.firewallZoneHeader}>
+                <span className={styles.firewallZoneTag}>{zone.id}</span>
+                <code className={styles.firewallZoneCidr}>{zone.cidr}</code>
+              </div>
+              <div className={styles.firewallZoneName}>{zone.name}</div>
+              <div className={styles.firewallZoneTrust}>{zone.trustLevel}</div>
+              <div className={styles.firewallZoneDesc}>{zone.description}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Ordered Rules Table */}
+      <div className={styles.firewallTableSection}>
+        <h4 className={styles.firewallSectionHeading}>Ordered Policy Ruleset (First Match Wins)</h4>
+        <div className={styles.firewallTableWrapper}>
+          <table className={styles.firewallTable}>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Source</th>
+                <th scope="col">Destination</th>
+                <th scope="col">Service / Port</th>
+                <th scope="col">Action</th>
+                <th scope="col">Ticket &amp; Business Justification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {content.rulesTable.map((r) => {
+                const isAccept = r.action === 'ACCEPT';
+                return (
+                  <tr key={r.id} className={styles.firewallRuleRow}>
+                    <td className={styles.firewallRuleNumCell}>
+                      <span className={styles.firewallRuleNumBadge}>#{r.ruleNum}</span>
+                    </td>
+                    <td className={styles.firewallZoneCell}>
+                      <code className={styles.firewallZoneCode}>{r.sourceZone}</code>
+                    </td>
+                    <td className={styles.firewallZoneCell}>
+                      <code className={styles.firewallZoneCode}>{r.destZone}</code>
+                    </td>
+                    <td className={styles.firewallServiceCell}>
+                      <span className={styles.firewallServiceText}>{r.service}</span>
+                    </td>
+                    <td className={styles.firewallActionCell}>
+                      <span
+                        className={`${styles.firewallActionBadge} ${
+                          isAccept
+                            ? styles['firewallActionBadge--accept']
+                            : styles['firewallActionBadge--drop']
+                        }`}
+                      >
+                        {r.action}
+                      </span>
+                    </td>
+                    <td className={styles.firewallContextCell}>
+                      {r.ticket && (
+                        <span className={styles.firewallTicketBadge}>{r.ticket}</span>
+                      )}
+                      <div className={styles.firewallDescText}>{r.description}</div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -915,6 +1054,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'network') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isFirewallPolicy || Array.isArray(raw?.rulesTable)) {
+      return <FirewallRuleViewer content={raw as unknown as FirewallPolicyContent} />;
+    }
     return <ExposureReportViewer content={raw as unknown as ExposureReportContent} />;
   }
   if (item.type === 'log') {
@@ -1100,6 +1242,36 @@ const Ordering: React.FC<{
   );
 };
 
+const GuidedForm: React.FC<{
+  step: Step;
+  value: Record<string, string>;
+  onChange: (v: Record<string, string>) => void;
+  submitted: boolean;
+}> = ({ step, value, onChange, submitted }) => (
+  <div className={styles.guidedFormList} role="group" aria-label={step.prompt}>
+    {step.items.map((item) => (
+      <div key={item.id} className={styles.guidedFormField}>
+        <label htmlFor={`field-${item.id}`} className={styles.guidedFormLabel}>
+          {item.label}
+        </label>
+        <select
+          id={`field-${item.id}`}
+          className={styles.classifySelect}
+          value={value[item.id] ?? ''}
+          disabled={submitted}
+          aria-label={item.label}
+          onChange={(e) => onChange({ ...value, [item.id]: e.target.value })}
+        >
+          <option value="" disabled>Select {item.label.toLowerCase()}…</option>
+          {(item.options ?? []).map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      </div>
+    ))}
+  </div>
+);
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 type StepState = Record<string, StepResponse['submitted']>;
@@ -1121,7 +1293,7 @@ export const ChallengePage: React.FC = () => {
         initial[step.id] = {};
       } else if (step.interaction === 'single-choice') {
         initial[step.id] = '';
-      } else if (step.interaction === 'classification') {
+      } else if (step.interaction === 'classification' || step.interaction === 'guided-form') {
         initial[step.id] = {};
       } else if (step.interaction === 'ordering' || step.interaction === 'ranking') {
         initial[step.id] = step.items.map((i) => i.id);
@@ -1169,6 +1341,14 @@ export const ChallengePage: React.FC = () => {
         const unset = step.items.some((item) => !classVal[item.id]);
         if (unset) {
           setValidationError(`Please classify all items in step ${challenge.steps.indexOf(step) + 1}.`);
+          return false;
+        }
+      }
+      if (step.interaction === 'guided-form') {
+        const formVal = (val as Record<string, string>) || {};
+        const unset = step.items.some((item) => !formVal[item.id]);
+        if (unset) {
+          setValidationError(`Please configure all fields in step ${challenge.steps.indexOf(step) + 1}.`);
           return false;
         }
       }
@@ -1340,6 +1520,14 @@ export const ChallengePage: React.FC = () => {
                     <Ordering
                       step={step}
                       value={(stepState[step.id] as string[]) || step.items.map((i) => i.id)}
+                      onChange={(v) => handleStepChange(step.id, v)}
+                      submitted={isSubmitted}
+                    />
+                  )}
+                  {step.interaction === 'guided-form' && (
+                    <GuidedForm
+                      step={step}
+                      value={stepState[step.id] as Record<string, string> ?? {}}
                       onChange={(v) => handleStepChange(step.id, v)}
                       submitted={isSubmitted}
                     />

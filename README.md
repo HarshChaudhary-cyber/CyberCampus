@@ -112,6 +112,20 @@ The application follows strict route hierarchy conventions:
   - Distinguish genuine security remediation needs from intended services; selecting all ports or guessing indiscriminately cannot pass due to anti-guessing scoring (balanced 4 safe / 4 unsafe split).
   - Formulate an effective administrative access remediation strategy: restrict SSH/management ingress to the dedicated corporate VPN (`10.0.100.0/24`) with public-key authentication, rather than relying on security-through-obscurity or exposing administrative dashboards to the open internet.
 
+### 8. Firewall Rule Audit (`cc-nw-02`)
+- **Room**: Network Security (`network`)
+- **Difficulty**: Intermediate (100 pts, pass threshold: 70)
+- **Investigation**: Perform a scheduled firewall audit on perimeter appliance `fw-perimeter-01.veridian-logistics.example` across 9 ordered rules.
+- **Evidence**:
+  - Interactive Firewall Policy Viewer with network zone topology cards (WAN `0.0.0.0/0`, DMZ `10.0.1.0/24`, Corporate LAN `10.0.2.0/24`, Secure DB Tier `10.0.3.0/24`, Management VPN `10.0.100.0/24`), evaluation semantics banner, and full ordered rule table with source, destination, service/port, action, log state, and change tickets.
+  - Enterprise Firewall Standard (SOP NET-201) establishing top-to-bottom first-match processing, prohibition of shadowed rules, least-privilege addressing, change ticket expiration, and deduplication.
+- **Educational Objective**:
+  - Understand top-to-bottom rule processing and first-match-wins semantics:
+    - Rule 4 (`0.0.0.0/0 -> 10.0.0.0/16 Any ACCEPT`, citing closed ticket `CHG-9941`) is overly broad and completely shadows Rule 5 (`ZONE-WAN -> 10.0.3.0/24 Any DROP`), allowing external attackers to bypass the perimeter block and access internal databases.
+    - Rule 7 is a redundant duplicate of Rule 6, adding administrative confusion.
+  - Reject the "change ticket fallacy": the existence of a ticket does not justify an insecure rule or permit leaving temporary troubleshooting rules active past project completion.
+  - Construct a least-privilege replacement rule via the interactive Guided Form widget: specify the vendor's static IP (`203.0.113.50/32`), DMZ jump-host (`10.0.1.25/32`), port `TCP 22 (SSH)`, and action `ACCEPT`.
+
 ---
 
 ## Development & Test Commands

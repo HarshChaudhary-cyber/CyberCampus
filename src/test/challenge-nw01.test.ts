@@ -43,8 +43,7 @@ describe('cc-nw-01 registration & metadata', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-nw-01')).toBe(true);
   });
 
-  it('leaves cc-nw-02 and cc-nw-03 as coming soon (not live)', () => {
-    expect(LIVE_CHALLENGE_IDS.has('cc-nw-02')).toBe(false);
+  it('leaves cc-nw-03 as coming soon (not live)', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-nw-03')).toBe(false);
   });
 
