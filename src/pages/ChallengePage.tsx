@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
-  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp,
+  Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -610,6 +610,137 @@ const AlertViewer: React.FC<{ content: AlertQueueContent }> = ({ content }) => {
   );
 };
 
+type TimelineEvent = {
+  id: string;
+  timestamp: string;
+  system: string;
+  eventType: string;
+  status: 'success' | 'failure' | 'warning' | 'alert';
+  title: string;
+  description: string;
+  sourceIp: string;
+  location?: string;
+  device?: {
+    name?: string;
+    os?: string;
+    browser?: string;
+    isManaged?: boolean;
+    trustStatus?: string;
+  };
+  sessionId?: string;
+  rawPayload?: string;
+};
+
+type TimelineContent = {
+  isTimeline: boolean;
+  timelineTitle: string;
+  timelineSubtitle: string;
+  subjectAccount: string;
+  timeRange: string;
+  events: TimelineEvent[];
+};
+
+const TimelineViewer: React.FC<{ content: TimelineContent }> = ({ content }) => {
+  const getStatusClass = (status: TimelineEvent['status']) => {
+    switch (status) {
+      case 'success':
+        return styles['timelineStatus--success'];
+      case 'failure':
+        return styles['timelineStatus--failure'];
+      case 'alert':
+        return styles['timelineStatus--alert'];
+      case 'warning':
+      default:
+        return styles['timelineStatus--warning'];
+    }
+  };
+
+  const getCardModifier = (status: TimelineEvent['status']) => {
+    if (status === 'alert') return styles['timelineEventCard--alert'];
+    if (status === 'warning') return styles['timelineEventCard--warning'];
+    return '';
+  };
+
+  return (
+    <div className={styles.timelineViewer} role="region" aria-label="Sign-in and Audit Timeline">
+      <div className={styles.timelineHeader}>
+        <div className={styles.timelineHeaderLeft}>
+          <Activity size={20} className={styles.timelineIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.timelineTitle}>{content.timelineTitle}</h3>
+            <p className={styles.timelineMeta}>
+              {content.subjectAccount} • {content.timeRange}
+            </p>
+          </div>
+        </div>
+        <span className={styles.timelineCountBadge}>{content.events.length} Events</span>
+      </div>
+
+      <div className={styles.timelineList}>
+        {content.events.map((evt) => (
+          <div
+            key={evt.id}
+            className={`${styles.timelineEventCard} ${getCardModifier(evt.status)}`}
+          >
+            <div className={styles.timelineEventTop}>
+              <div className={styles.timelineEventTimeGroup}>
+                <span className={styles.timelineTimestamp}>{evt.timestamp}</span>
+                <span className={styles.timelineSystemTag}>{evt.system}</span>
+              </div>
+              <span className={`${styles.timelineStatus} ${getStatusClass(evt.status)}`}>
+                {evt.status}
+              </span>
+            </div>
+
+            <h4 className={styles.timelineEventTitle}>{evt.title}</h4>
+            <p className={styles.timelineEventDesc}>{evt.description}</p>
+
+            <div className={styles.timelineMetaGrid}>
+              <div className={styles.timelineMetaItem}>
+                <span className={styles.timelineMetaKey}>Source IP & Location:</span>
+                <span className={styles.timelineMetaVal}>
+                  {evt.sourceIp} {evt.location ? `(${evt.location})` : ''}
+                </span>
+              </div>
+
+              {evt.device && (
+                <div className={styles.timelineMetaItem}>
+                  <span className={styles.timelineMetaKey}>Endpoint Posture:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <span className={styles.timelineMetaVal}>{evt.device.name ?? 'Unknown Device'}</span>
+                    {evt.device.isManaged !== undefined && (
+                      <span
+                        className={`${styles.timelineDeviceBadge} ${
+                          evt.device.isManaged
+                            ? styles['timelineDevice--managed']
+                            : styles['timelineDevice--unmanaged']
+                        }`}
+                      >
+                        {evt.device.isManaged ? 'Managed' : 'Unmanaged'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {evt.sessionId && (
+                <div className={styles.timelineMetaItem}>
+                  <span className={styles.timelineMetaKey}>Session ID:</span>
+                  <span className={styles.timelineMetaVal}>{evt.sessionId}</span>
+                </div>
+              )}
+            </div>
+
+            {evt.rawPayload && (
+              <div className={styles.timelineRawPayload}>{evt.rawPayload}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -631,6 +762,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
     const raw = item.content as Record<string, unknown>;
     if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
       return <AlertViewer content={raw as unknown as AlertQueueContent} />;
+    }
+    if (raw?.isTimeline || Array.isArray(raw?.events)) {
+      return <TimelineViewer content={raw as unknown as TimelineContent} />;
     }
     return <LogViewer content={item.content as unknown as LogContent} />;
   }
@@ -836,6 +970,9 @@ export const ChallengePage: React.FC = () => {
       const raw = ev.content as Record<string, unknown>;
       if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
         return <ShieldAlert size={14} aria-hidden="true" />;
+      }
+      if (raw?.isTimeline || Array.isArray(raw?.events)) {
+        return <Activity size={14} aria-hidden="true" />;
       }
       return <FileText size={14} aria-hidden="true" />;
     }

@@ -18,7 +18,7 @@ const CHALLENGE_DESCRIPTIONS: Record<string, string> = {
   'cc-ph-02': 'Spot a CEO fraud attempt buried in an email chain.',
   'cc-ph-03': 'Classify three emails: two legitimate, one targeted spear-phish.',
   'cc-so-01': 'Triage 8 SIEM alerts — real threats vs false positives.',
-  'cc-so-02': 'Investigate a suspicious 3am login from an unknown location.',
+  'cc-so-02': 'Investigate an off-hours administrative login, MFA fatigue, and rogue IAM keys.',
   'cc-so-03': 'Reconstruct a ransomware incident timeline from log events.',
   'cc-nw-01': 'Flag risky open ports in a port scan report.',
   'cc-nw-02': 'Audit 10 firewall rules and fix the dangerous ones.',

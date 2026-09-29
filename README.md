@@ -67,6 +67,19 @@ The application follows strict route hierarchy conventions:
   - Anti-guessing scoring ensures a blanket "Investigate" or "Dismiss" strategy cannot pass or earn full credit (balanced 4/4 split).
   - Choose the safest immediate containment action for critical data exfiltration (isolate host via EDR, terminate process, preserve volatile memory) over destructive reboots or delayed email queries.
 
+### 5. The 3am Login (`cc-so-02`)
+- **Room**: Security Operations (`secops`)
+- **Difficulty**: Intermediate (100 pts, pass threshold: 70)
+- **Investigation**: Investigate an off-hours administrative authentication alert and IAM key generation on Senior DBA Marcus Vance's account.
+- **Evidence**:
+  - Interactive multi-system timeline (Okta IdP, Duo MFA, ZTNA VPN, AWS CloudTrail) spanning 02:45–03:25 UTC.
+  - User Baseline Profile with hardware inventory (`VER-MBP-9021`), on-call rotation schedule, and SOP SEC-204 incident triage standards.
+- **Educational Objective**:
+  - Teach that off-hours access (03:14 UTC) and European IP geolocations alone do NOT prove compromise (on-call rotation, European database replicas).
+  - Identify genuine indicators of compromise: unmanaged Windows endpoint vs corporate Mac, commercial hosting ASN vs residential ISP, MFA push fatigue cluster (5 denials in 3.5m followed by 1 approval), and unauthorized programmatic IAM access key generation (`AKIA2048VANCE902`).
+  - Distinguish confirmed facts directly established by log evidence from plausible unproven hypotheses (such as how the password was acquired or why MFA was approved).
+  - Select a proportionate response: immediately terminate the rogue session, deactivate the new access key, contact the user via out-of-band directory phone, mandate credential resets, and preserve audit logs without premature breach declarations or panic-wiping uninvolved devices.
+
 ---
 
 ## Development & Test Commands

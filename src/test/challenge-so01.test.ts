@@ -34,9 +34,9 @@ describe('cc-so-01 registration & metadata', () => {
     expect(ch?.roomId).toBe('secops');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS while intermediate and advanced SecOps remain coming soon', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS alongside cc-so-02 while advanced SecOps (cc-so-03) remains locked', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-so-01')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-so-02')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-so-02')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-so-03')).toBe(false);
   });
 
@@ -139,13 +139,16 @@ describe('cc-so-01 evidence integrity', () => {
     const alt208 = content.alerts.find((a) => a.id === 'alt-208')!;
     expect(alt208).toBeDefined();
 
-    // Verify least-privilege policy is used
+    // Verify fictional company-managed least-privilege policy is used
+    expect(alt208.description).toContain('Company-managed policy');
     expect(alt208.description).toContain('AmazonEKSClusterAutoscalerPolicy');
     expect(alt208.description).not.toContain('AdministratorAccess');
-    expect(alt208.context).toContain('least-privilege');
+    expect(alt208.context).toContain('fictional, company-managed customer policy');
+    expect(alt208.context).toContain('autoscaling:DescribeAutoScalingGroups');
     expect(alt208.context).toContain('INFRA-9042');
     expect(alt208.details?.commandLine).toContain('AmazonEKSClusterAutoscalerPolicy');
-    expect(alt208.details?.rawLog).toContain('AmazonEKSClusterAutoscalerPolicy');
+    expect(alt208.details?.rawLog).toContain('CustomerManaged');
+    expect(alt208.details?.rawLog).toContain('autoscaling:SetDesiredCapacity');
 
     // Confirm step item label is updated
     const step1 = challengeCC_SO_01.steps[0];
