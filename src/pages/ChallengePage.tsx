@@ -913,6 +913,20 @@ type FirewallRuleItem = {
   description: string;
 };
 
+type FirewallNatVip = {
+  vip: string;
+  targetIp: string;
+  service: string;
+  zone: string;
+  description: string;
+};
+
+type FirewallNatArchitecture = {
+  model: string;
+  summary: string;
+  vipMappings: FirewallNatVip[];
+};
+
 type FirewallPolicyContent = {
   isFirewallPolicy?: boolean;
   applianceName: string;
@@ -920,6 +934,7 @@ type FirewallPolicyContent = {
   evaluationModel: string;
   lastAuditDate: string;
   firewallVendor: string;
+  natArchitecture?: FirewallNatArchitecture;
   zones: FirewallZone[];
   rulesTable: FirewallRuleItem[];
 };
@@ -953,6 +968,44 @@ const FirewallRuleViewer: React.FC<{ content: FirewallPolicyContent }> = ({ cont
           Traffic is evaluated sequentially from Rule #1 downwards. The <strong>first rule that matches</strong> source, destination, and service executes immediately. Subsequent rules are never evaluated. Unmatched traffic hits the default drop rule.
         </p>
       </div>
+
+      {/* NAT & VIP Architecture Section */}
+      {content.natArchitecture && (
+        <div className={styles.firewallNatSection}>
+          <div className={styles.firewallNatHeader}>
+            <ExternalLink size={15} aria-hidden="true" />
+            <span className={styles.firewallNatTitle}>{content.natArchitecture.model}</span>
+          </div>
+          <p className={styles.firewallNatSummary}>{content.natArchitecture.summary}</p>
+          <div className={styles.firewallVipTableWrapper}>
+            <table className={styles.firewallVipTable}>
+              <thead>
+                <tr>
+                  <th scope="col">Public VIP</th>
+                  <th scope="col">Pre-Routing DNAT Target</th>
+                  <th scope="col">Service</th>
+                  <th scope="col">Mapped Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                {content.natArchitecture.vipMappings.map((vip) => (
+                  <tr key={vip.vip}>
+                    <td>
+                      <code className={styles.firewallZoneCode}>{vip.vip}</code>
+                    </td>
+                    <td>
+                      <code className={styles.firewallZoneCode}>{vip.targetIp}</code>
+                      <span className={styles.firewallVipZoneTag}>{vip.zone}</span>
+                    </td>
+                    <td className={styles.firewallVipService}>{vip.service}</td>
+                    <td className={styles.firewallVipDesc}>{vip.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Network Zone Legend Cards */}
       <div className={styles.firewallZonesSection}>

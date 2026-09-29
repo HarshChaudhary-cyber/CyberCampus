@@ -117,14 +117,16 @@ The application follows strict route hierarchy conventions:
 - **Difficulty**: Intermediate (100 pts, pass threshold: 70)
 - **Investigation**: Perform a scheduled firewall audit on perimeter appliance `fw-perimeter-01.veridian-logistics.example` across 9 ordered rules.
 - **Evidence**:
-  - Interactive Firewall Policy Viewer with network zone topology cards (WAN `0.0.0.0/0`, DMZ `10.0.1.0/24`, Corporate LAN `10.0.2.0/24`, Secure DB Tier `10.0.3.0/24`, Management VPN `10.0.100.0/24`), evaluation semantics banner, and full ordered rule table with source, destination, service/port, action, log state, and change tickets.
-  - Enterprise Firewall Standard (SOP NET-201) establishing top-to-bottom first-match processing, prohibition of shadowed rules, least-privilege addressing, change ticket expiration, and deduplication.
+  - Interactive Firewall Policy Viewer with network zone topology cards (WAN `0.0.0.0/0`, DMZ `10.0.1.0/24`, Corporate LAN `10.0.2.0/24`, Secure DB Tier `10.0.3.0/24`, Management VPN `10.0.100.0/24`), Destination NAT (Post-DNAT Security Inspection) architecture with public VIP mappings (`198.51.100.0/24 -> 10.0.x.x`), evaluation semantics banner, and full ordered rule table with source, destination, service/port, action, log state, and change tickets.
+  - Enterprise Firewall Standard (SOP NET-201) establishing top-to-bottom first-match processing, prohibition of shadowed rules, least-privilege addressing (mandatory `/32` host scoping for management access), change ticket expiration, deduplication, and post-DNAT policy inspection semantics.
 - **Educational Objective**:
-  - Understand top-to-bottom rule processing and first-match-wins semantics:
-    - Rule 4 (`0.0.0.0/0 -> 10.0.0.0/16 Any ACCEPT`, citing closed ticket `CHG-9941`) is overly broad and completely shadows Rule 5 (`ZONE-WAN -> 10.0.3.0/24 Any DROP`), allowing external attackers to bypass the perimeter block and access internal databases.
+  - Understand post-DNAT inspection semantics and top-to-bottom rule processing (first-match-wins):
+    - External WAN traffic arrives at public Virtual IPs (`198.51.100.0/24`) and translates to internal targets (`10.0.x.x`) in pre-routing; security filter rules match against translated internal destination IPs.
+    - Rule 3 (`ZONE-MGMT -> Admin Bastion Host 10.0.100.10/32:22 ACCEPT`) is properly scoped to an exact `/32` administrative bastion, fully complying with SOP NET-201.
+    - Rule 4 (`ZONE-WAN -> Internal 10.0.0.0/16 Any ACCEPT`, citing closed ticket `CHG-9941`) is overly broad and completely shadows Rule 5 (`ZONE-WAN -> ZONE-DB 10.0.3.0/24 Any DROP`), allowing external packets arriving at database VIP `198.51.100.50` to bypass the perimeter block and access internal databases.
     - Rule 7 is a redundant duplicate of Rule 6, adding administrative confusion.
   - Reject the "change ticket fallacy": the existence of a ticket does not justify an insecure rule or permit leaving temporary troubleshooting rules active past project completion.
-  - Construct a least-privilege replacement rule via the interactive Guided Form widget: specify the vendor's static IP (`203.0.113.50/32`), DMZ jump-host (`10.0.1.25/32`), port `TCP 22 (SSH)`, and action `ACCEPT`.
+  - Construct a least-privilege replacement rule via the interactive Guided Form widget: specify the vendor's static IP (`203.0.113.50/32`), DMZ jump-host (`10.0.1.25/32`), port `TCP 22 (SSH)`, and action `ACCEPT`, fulfilling the vendor maintenance need while eliminating the shadow over Rule 5.
 
 ---
 

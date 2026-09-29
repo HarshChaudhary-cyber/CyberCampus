@@ -2130,6 +2130,96 @@
   margin: 0;
 }
 
+/* ── NAT & Ingress Pipeline Section ── */
+.firewallNatSection {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.firewallNatHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #38bdf8;
+}
+
+.firewallNatTitle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.firewallNatSummary {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.firewallVipTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.firewallVipTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: left;
+}
+
+.firewallVipTable th {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.firewallVipTable td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.firewallVipTable tr:last-child td {
+  border-bottom: none;
+}
+
+.firewallVipZoneTag {
+  font-size: 9px;
+  font-weight: 700;
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 1px 4px;
+  margin-left: 6px;
+  display: inline-block;
+}
+
+.firewallVipService {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.firewallVipDesc {
+  color: var(--color-text-muted);
+}
+
 .firewallSectionHeading {
   font-size: var(--text-xs);
   font-weight: 600;
