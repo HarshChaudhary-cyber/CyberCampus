@@ -2682,9 +2682,6 @@
   border-left: 2px solid #38bdf8;
 }
 
-.packetRowTunneling {
-  background: rgba(239, 68, 68, 0.03);
-}
 
 .packetNumCell {
   font-family: var(--font-mono);
@@ -2755,16 +2752,6 @@
   line-height: 1.4;
 }
 
-.tunnelingTag {
-  font-size: 9px;
-  font-weight: 700;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: var(--radius-sm);
-  padding: 1px 5px;
-  white-space: nowrap;
-}
 
 /* Packet Inspector */
 .packetInspector {
@@ -2813,22 +2800,27 @@
   color: #e0f2fe;
 }
 
-.packetTunnelingAlert {
+.packetLabelDissection {
   margin-top: 6px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   font-size: 11px;
+  color: var(--color-text-secondary);
 }
 
-.packetTunnelingAlert code {
+.packetLabelDissection code {
   font-family: var(--font-mono);
-  color: #fca5a5;
+  color: #38bdf8;
   word-break: break-all;
+}
+
+.packetLabelDissection strong {
+  color: #e0f2fe;
 }
 
 

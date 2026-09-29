@@ -110,7 +110,7 @@ describe('cc-nw-03 evidence integrity & packet structure', () => {
     expect(content.totalPackets).toBe(36);
     expect(content.packets).toHaveLength(36);
     expect(content.methodologyNote).toBeDefined();
-    expect(content.methodologyNote.formula).toContain('Count of Outbound Tunneling Queries');
+    expect(content.methodologyNote.formula).toContain('Count of Outbound Anomaly Queries');
   });
 
   it('uses only RFC 2606 .example domains and RFC 1918 / RFC 5737 documentation IP addresses', () => {
@@ -444,3 +444,81 @@ describe('cc-nw-03 educational explanations & answer formatting', () => {
     expect(disp3).toContain('Immediate Incident Response Action: Isolate 10.0.2.84 at switch/network layer');
   });
 });
+
+// ── Task 5C.1: Neutral Viewer Behavior & Absence of Answer Spoilers ───────────
+
+describe('cc-nw-03 packet viewer neutral behavior & absence of answer spoilers (Task 5C.1)', () => {
+  const pcapEv = challengeCC_NW_03.evidence.find((e) => e.id === 'ev-packet-trace')!;
+  const content = pcapEv.content as unknown as PacketTraceContent;
+
+  it('methodology note does not spoil query count pre-submission', () => {
+    expect(content.methodologyNote.formula).toBe(
+      'Estimated Encoded Payload Size = [Count of Outbound Anomaly Queries] × [Initial Subdomain Label Length in Bytes]'
+    );
+    expect(content.methodologyNote.formula).not.toContain('24');
+    expect(content.methodologyNote.chunkDefinition).not.toContain('24');
+  });
+
+  it('allows learner to independently discover and count the 24 anomaly queries using neutral search/filtering', () => {
+    // By searching for the anomaly domain pattern 'sync-telemetry'
+    const domainMatches = content.packets.filter(
+      (p) =>
+        p.dnsDetails?.queryName?.toLowerCase().includes('sync-telemetry') ||
+        p.summary.toLowerCase().includes('sync-telemetry')
+    );
+    expect(domainMatches).toHaveLength(24);
+
+    // Or by searching for the suspicious host IP 10.0.2.84 with DNS protocol
+    const hostDnsMatches = content.packets.filter(
+      (p) => p.sourceIp === '10.0.2.84' && p.protocol === 'DNS'
+    );
+    expect(hostDnsMatches).toHaveLength(24);
+  });
+
+  it('provides all observable facts in the packet inspector to calculate 768 encoded bytes without declaring tunneling', () => {
+    const anomalyPackets = content.packets.filter((p) =>
+      p.dnsDetails?.queryName?.includes('sync-telemetry.example')
+    );
+    expect(anomalyPackets).toHaveLength(24);
+
+    for (const pkt of anomalyPackets) {
+      expect(pkt.dnsDetails).toBeDefined();
+      const queryName = pkt.dnsDetails!.queryName;
+      const initialLabel = queryName.split('.')[0];
+
+      // Initial subdomain label is 32 characters = 32 bytes ASCII
+      expect(initialLabel.length).toBe(32);
+      expect(pkt.lengthBytes).toBe(102);
+    }
+
+    // Calculation: 24 queries * 32 bytes/chunk = 768 bytes
+    const count = anomalyPackets.length;
+    const initialLabelLength = anomalyPackets[0].dnsDetails!.queryName.split('.')[0].length;
+    const totalEncodedBytes = count * initialLabelLength;
+    expect(totalEncodedBytes).toBe(768);
+  });
+
+  it('neutral packet inspector extracts initial subdomain label and length across any DNS query type', () => {
+    // Legitimate SPF TXT query (pkt 7)
+    const spfPkt = content.packets.find((p) => p.packetNum === 7)!;
+    const spfParts = spfPkt.dnsDetails!.queryName.split('.');
+    const spfFirstLabel = spfParts[0];
+    expect(spfFirstLabel).toBe('_spf');
+    expect(spfFirstLabel.length).toBe(4);
+
+    // Anomaly A query (pkt 13)
+    const anomalyPkt = content.packets.find((p) => p.packetNum === 13)!;
+    const anomalyParts = anomalyPkt.dnsDetails!.queryName.split('.');
+    const anomalyFirstLabel = anomalyParts[0];
+    expect(anomalyFirstLabel.length).toBe(32);
+  });
+
+  it('results explanation distinguishes encoded bytes (768 B), decoded binary bytes (384 B), and total frame bytes (2,448 B)', () => {
+    const { successExplanation } = challengeCC_NW_03;
+    expect(successExplanation).toContain('24');
+    expect(successExplanation).toContain('768 bytes');
+    expect(successExplanation).toContain('384 bytes');
+    expect(successExplanation).toContain('2,448 bytes');
+  });
+});
+

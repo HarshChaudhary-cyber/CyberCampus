@@ -1130,11 +1130,8 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
 
   const filteredPackets = useMemo(() => {
     return content.packets.filter((p) => {
-      if (filterProtocol !== 'all') {
-        if (filterProtocol === 'DNS' && p.protocol !== 'DNS') return false;
-        if (filterProtocol === 'TLS' && p.protocol !== 'TLS') return false;
-        if (filterProtocol === 'NTP' && p.protocol !== 'NTP') return false;
-        if (filterProtocol === 'tunneling' && !p.isTunnelingQuery) return false;
+      if (filterProtocol !== 'all' && p.protocol !== filterProtocol) {
+        return false;
       }
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -1230,28 +1227,21 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
             className={`${styles.packetProtoTab} ${filterProtocol === 'DNS' ? styles.packetProtoTabActive : ''}`}
             onClick={() => setFilterProtocol('DNS')}
           >
-            DNS ({content.packets.filter(p => p.protocol === 'DNS').length})
-          </button>
-          <button
-            type="button"
-            className={`${styles.packetProtoTab} ${filterProtocol === 'tunneling' ? styles.packetProtoTabActive : ''}`}
-            onClick={() => setFilterProtocol('tunneling')}
-          >
-            Tunneling Only ({content.packets.filter(p => p.isTunnelingQuery).length})
+            DNS ({content.packets.filter((p) => p.protocol === 'DNS').length})
           </button>
           <button
             type="button"
             className={`${styles.packetProtoTab} ${filterProtocol === 'TLS' ? styles.packetProtoTabActive : ''}`}
             onClick={() => setFilterProtocol('TLS')}
           >
-            TLS/HTTPS ({content.packets.filter(p => p.protocol === 'TLS').length})
+            TLS/HTTPS ({content.packets.filter((p) => p.protocol === 'TLS').length})
           </button>
           <button
             type="button"
             className={`${styles.packetProtoTab} ${filterProtocol === 'NTP' ? styles.packetProtoTabActive : ''}`}
             onClick={() => setFilterProtocol('NTP')}
           >
-            NTP ({content.packets.filter(p => p.protocol === 'NTP').length})
+            NTP ({content.packets.filter((p) => p.protocol === 'NTP').length})
           </button>
         </div>
 
@@ -1281,7 +1271,7 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
                 <tr
                   key={pkt.packetNum}
                   onClick={() => setSelectedPacketNum(isSelected ? null : pkt.packetNum)}
-                  className={`${styles.packetRow} ${isSelected ? styles.packetRowSelected : ''} ${pkt.isTunnelingQuery ? styles.packetRowTunneling : ''}`}
+                  className={`${styles.packetRow} ${isSelected ? styles.packetRowSelected : ''}`}
                   tabIndex={0}
                   role="button"
                   aria-pressed={isSelected}
@@ -1308,9 +1298,6 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
                   <td className={styles.packetLengthCell}>{pkt.lengthBytes} B</td>
                   <td className={styles.packetSummaryCell}>
                     <span>{pkt.summary}</span>
-                    {pkt.isTunnelingQuery && (
-                      <span className={styles.tunnelingTag}>32B Payload</span>
-                    )}
                   </td>
                 </tr>
               );
@@ -1324,7 +1311,7 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
         <div className={styles.packetInspector}>
           <div className={styles.packetInspectorHeader}>
             <div className={styles.packetInspectorTitle}>
-              Frame #{selectedPacket.packetNum}: Detailed Dissection ({selectedPacket.protocol}, {selectedPacket.lengthBytes} bytes)
+              Frame #{selectedPacket.packetNum}: Protocol Dissection ({selectedPacket.protocol}, {selectedPacket.lengthBytes} bytes)
             </div>
             <button
               type="button"
@@ -1344,15 +1331,21 @@ const PacketTraceViewer: React.FC<{ content: PacketTraceContent }> = ({ content 
             </div>
             {selectedPacket.dnsDetails && (
               <div className={styles.packetLayerItem}>
-                <strong>Layer 7 (DNS):</strong> Transaction ID <code>{selectedPacket.dnsDetails.transactionId}</code>, Query Type: <code>{selectedPacket.dnsDetails.queryType}</code>, Name: <code>{selectedPacket.dnsDetails.queryName}</code>
-                {selectedPacket.isTunnelingQuery && (
-                  <div className={styles.packetTunnelingAlert}>
-                    <strong>Covert Channel Subdomain Analysis:</strong>
-                    <div>Encoded Chunk Label: <code>{selectedPacket.subdomainLabel}</code></div>
-                    <div>Chunk Length: <strong>{selectedPacket.encodedPayloadLength} characters (32 bytes ASCII)</strong></div>
-                    <div>Entropy: <strong>High Randomness / Hex-Encoded Ciphertext Chunk</strong></div>
-                  </div>
-                )}
+                <strong>Layer 7 (DNS):</strong> Transaction ID: <code>{selectedPacket.dnsDetails.transactionId}</code> | Type: <code>{selectedPacket.dnsDetails.queryType}</code> | Flags: <code>{selectedPacket.dnsDetails.flags}</code>
+                <div style={{ marginTop: '4px' }}>
+                  Query Name: <code>{selectedPacket.dnsDetails.queryName}</code>
+                </div>
+                {(() => {
+                  const queryParts = selectedPacket.dnsDetails.queryName.split('.');
+                  const firstLabel = queryParts[0] || '';
+                  return (
+                    <div className={styles.packetLabelDissection}>
+                      <div>Initial Subdomain Label: <code>{firstLabel}</code></div>
+                      <div>Label Length: <strong>{firstLabel.length} characters ({firstLabel.length} bytes ASCII)</strong></div>
+                      <div>Total Packet Frame Length: <strong>{selectedPacket.lengthBytes} bytes</strong></div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

@@ -71,13 +71,14 @@ export const challengeCC_NW_03: Challenge = {
         appliance: 'Zeek / Wireshark Analyzer on sw-core-01.veridian-logistics.example',
         methodologyNote: {
           title: 'Exfiltration Volume Calculation & Metric Methodology',
-          formula: 'Estimated Encoded Payload Size = [Count of Outbound Tunneling Queries] × [Encoded Label Length in Bytes]',
+          formula:
+            'Estimated Encoded Payload Size = [Count of Outbound Anomaly Queries] × [Initial Subdomain Label Length in Bytes]',
           chunkDefinition:
-            'Each DNS tunneling query carries a distinct 32-character hexadecimal data chunk in its initial subdomain label (32 ASCII characters = 32 bytes).',
+            'When evaluating candidate queries, inspect the initial subdomain label structure. Standard DNS queries carry concise service names, whereas encoded payload chunks exhibit fixed, high-character lengths (e.g. 32 ASCII characters = 32 bytes per chunk).',
           distinctions: [
-            'Encoded Payload Size: Measures the actual exfiltrated data string carried inside DNS request labels (32 bytes per query).',
-            'Decoded Raw Binary Size: Because 2 hexadecimal characters represent 1 byte of raw binary data, 32 hex chars decode to 16 raw bytes.',
-            'Total Network Traffic: Measures the full physical Ethernet/IP/UDP frame length (102 bytes per query), which includes protocol headers and checksums.',
+            'Encoded Payload Size: Measures the string length of the data payload encoded inside DNS request labels (32 bytes per candidate query).',
+            'Decoded Raw Binary Size: Because 2 hexadecimal characters represent 1 byte of raw binary data, a 32-character hexadecimal label decodes to 16 raw bytes.',
+            'Total Network Traffic: Measures the full physical Ethernet/IP/UDP frame length (e.g. 102 bytes per query), which includes protocol headers and checksums.',
           ],
         },
         packets: [
