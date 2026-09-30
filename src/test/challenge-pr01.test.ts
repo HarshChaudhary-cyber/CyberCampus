@@ -57,13 +57,13 @@ describe('cc-pr-01 registration & metadata', () => {
     expect(found?.title).toBe('Password Audit');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS while keeping cc-pr-03 coming soon', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS along with all privacy challenges', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-02')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-pr-03')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-pr-03')).toBe(true);
   });
 
-  it('preserves all previously built live challenges across all rooms (total 14 live challenges)', () => {
+  it('preserves all previously built live challenges across all rooms (total 15 live challenges)', () => {
     // Phishing Defense
     expect(LIVE_CHALLENGE_IDS.has('cc-ph-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-ph-02')).toBe(true);
@@ -87,17 +87,18 @@ describe('cc-pr-01 registration & metadata', () => {
     // Privacy & Account Security
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-02')).toBe(true);
+    expect(LIVE_CHALLENGE_IDS.has('cc-pr-03')).toBe(true);
 
-    expect(LIVE_CHALLENGE_IDS.size).toBe(14);
+    expect(LIVE_CHALLENGE_IDS.size).toBe(15);
   });
 
-  it('verifies the privacy room includes cc-pr-01 and cc-pr-02 in its challenge list', () => {
+  it('verifies the privacy room includes cc-pr-01, cc-pr-02, and cc-pr-03 in its challenge list', () => {
     const room = getRoom('privacy');
     expect(room).toBeDefined();
     expect(room?.challengeIds).toEqual(['cc-pr-01', 'cc-pr-02', 'cc-pr-03']);
     expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[0])).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[1])).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[2])).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[2])).toBe(true);
   });
 
   it('has deterministic point values summing to exactly 100 with passThreshold 70', () => {

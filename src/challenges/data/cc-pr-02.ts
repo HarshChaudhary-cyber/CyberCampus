@@ -276,7 +276,7 @@ export const challengeCC_PR_02: Challenge = {
         effectiveDate: '2026-05-15',
         classification: 'INTERNAL INCIDENT PROCEDURE',
         rules: [
-          'Rule 1 (The Forensic Meaning of Unsolicited MFA Prompts): An unsolicited MFA push prompt is conclusive technical evidence that an adversary has already entered the user\'s correct primary password. The attacker is currently blocked solely by the secondary authentication barrier.',
+          'Rule 1 (The Forensic Meaning of Unsolicited MFA Prompts): In password-first authentication architectures (such as this environment\'s IdP), an unsolicited MFA push prompt is dispatched only after primary credentials have been successfully verified in telemetry. However, authentication architectures differ across systems: in passwordless or username-initiated push flows, a push may appear without entering a password. Responders must therefore verify authentication log events to corroborate whether primary credentials were authenticated prior to the push dispatch.',
           'Rule 2 (MFA Fatigue / Push Bombing Protocol): Users must never approve any authentication prompt they did not personally initiate. Repeated notifications are an adversary tactic to induce fatigue, confusion, or accidental acceptance. Tapping "Approve" immediately hands full access to the adversary.',
           'Rule 3 (Social Engineering & Impersonation Defense): Adversaries frequently coordinate push fatigue attacks with urgent text messages, emails, or phone calls impersonating IT Helpdesk or Security staff. Official Apex IT personnel will NEVER instruct an employee to approve an MFA prompt, bypass authentication, or read back security codes.',
           'Rule 4 (Mandatory Immediate Containment Procedure): When subjected to push bombing or suspicious authentication requests, employees and responders must: (1) Reject and deny all pending prompts; (2) Refrain from replying to out-of-band social engineering messages; (3) Report the attack immediately to the SOC via verified internal hotlines; (4) Terminate all existing sessions across identity providers (revoke refresh tokens); and (5) Initiate an immediate primary password reset.',
@@ -284,7 +284,7 @@ export const challengeCC_PR_02: Challenge = {
           '  - SMS / Voice OTP: Least secure; vulnerable to SIM swapping, cellular eavesdropping, and SS7 routing interception.',
           '  - Simple Mobile Push ("Tap to Approve"): Convenient, but highly vulnerable to push fatigue, prompt bombing, and accidental acceptance.',
           '  - Authenticator App TOTP (6-digit rolling codes): Requires manual code entry and immune to remote push fatigue, but NOT phishing-resistant because real-time adversary-in-the-middle (AiTM) reverse proxies can relay intercepted codes.',
-          '  - Phishing-Resistant FIDO2 / WebAuthn (Hardware Keys & Passkeys): Highest security; cryptographically binds the authentication assertion to the exact domain origin via public-key cryptography. Cannot be phished, intercepted by AiTM proxies, or triggered via unsolicited remote push prompts.',
+          '  - Phishing-Resistant FIDO2 / WebAuthn (Hardware Keys & Passkeys): High assurance; cryptographically binds the authentication assertion to the exact domain origin via public-key cryptography. Among the available options, it provides strong phishing resistance against AiTM proxy interception and remote push fatigue (though no single mechanism eliminates all possible endpoint malware or physical attacks).',
         ],
       } as unknown as Record<string, unknown>,
     },
@@ -302,7 +302,7 @@ export const challengeCC_PR_02: Challenge = {
         {
           id: 'att-mfa-fatigue-password-compromised',
           label:
-            "MFA Fatigue / Push Notification Bombing: The attacker has already obtained Elena's valid primary password and is repeatedly triggering push approval prompts to fatigue or trick her into authorizing the session.",
+            "MFA Fatigue / Push Notification Bombing: The scenario authentication logs explicitly record successful primary password entry prior to each push dispatch, confirming the attacker already possesses Elena's valid password and is repeatedly triggering push approval prompts to fatigue or trick her into authorizing the session.",
         },
         {
           id: 'att-network-dos-ddos',
@@ -362,13 +362,13 @@ export const challengeCC_PR_02: Challenge = {
     {
       id: 'step-longterm-defense',
       prompt:
-        'To definitively eliminate push fatigue attacks and real-time adversary-in-the-middle (AiTM) credential phishing across the organization, which authentication modernization policy should the security team implement?',
+        'To counter push fatigue attacks and provide phishing-resistant protection against real-time adversary-in-the-middle (AiTM) credential interception among the available options, which authentication modernization policy should the security team implement?',
       interaction: 'single-choice',
       items: [
         {
           id: 'def-fido2-phishing-resistant',
           label:
-            'Mandate FIDO2/WebAuthn hardware security keys or device-bound passkeys for high-risk access, as they cryptographically bind authentication to the origin URL and cannot be phished or triggered via unsolicited remote push prompts.',
+            'Mandate FIDO2/WebAuthn hardware security keys or device-bound passkeys for high-risk access, as they cryptographically bind authentication to the origin URL and provide phishing resistance against remote proxy interception and push spam.',
         },
         {
           id: 'def-switch-to-sms',
@@ -395,8 +395,8 @@ export const challengeCC_PR_02: Challenge = {
   // ── Hints ─────────────────────────────────────────────────────────────────
   hints: [
     'Analyze the timing and origin of each event in the authentication log. Notice the legitimate morning login from Seattle (09:14 UTC) versus the midnight cluster originating from an unfamiliar IP in Bucharest, Romania (23:42–23:47 UTC).',
-    'Remember the fundamental rule of multi-factor authentication: an MFA push prompt is only dispatched AFTER the correct primary username and password have already been submitted. The arrival of repeated prompts proves the adversary already holds valid primary credentials.',
-    'Carefully evaluate authentication factor capabilities under SOP SEC-304: simple push notifications can be spammed remotely, and 6-digit TOTP app codes can still be intercepted by real-time reverse proxies. Only cryptographic FIDO2/WebAuthn hardware keys and passkeys provide true phishing resistance through domain origin binding.',
+    'Review the authentication log entries for each event: in this environment\'s password-first flow, each push dispatch is explicitly preceded by successful primary password verification. Note that while some modern architectures use passwordless push where no password is required, the logs here confirm Elena\'s primary password was compromised and entered by the adversary.',
+    'Carefully evaluate authentication factor capabilities under SOP SEC-304: simple push notifications can be spammed remotely, and 6-digit TOTP app codes can still be intercepted by real-time reverse proxies. Among the available options, FIDO2/WebAuthn hardware keys and device-bound passkeys provide cryptographic phishing resistance through domain origin binding.',
   ],
 
   // ── Skills ────────────────────────────────────────────────────────────────
@@ -411,7 +411,7 @@ export const challengeCC_PR_02: Challenge = {
   // ── Feedback Explanations ──────────────────────────────────────────────────
   passThreshold: 70,
   successExplanation:
-    'Outstanding incident response! You recognized that repeated unsolicited MFA push notifications signify an active MFA fatigue (push bombing) attack, proving the adversary already possesses the valid primary password. By rejecting the prompts, ignoring the social engineering SMS, and choosing an immediate session revocation and password reset, you prevented an unauthorized cloud console takeover. Furthermore, you correctly identified that only FIDO2/WebAuthn public-key authentication provides genuine phishing resistance through origin binding, whereas simple push can be spammed and rolling app codes (TOTP) remain vulnerable to real-time AiTM proxy relay.',
+    'Outstanding incident response! You recognized that repeated unsolicited MFA push notifications signify an active MFA fatigue (push bombing) attack. Because the authentication log in this scenario explicitly records successful primary-password verification before each push dispatch, the telemetry confirms the adversary already entered Elena\'s valid password. By rejecting the prompts, ignoring the social engineering SMS, and choosing an immediate session revocation and password reset, you prevented an unauthorized cloud console takeover. Furthermore, you correctly identified that FIDO2/WebAuthn public-key authentication provides phishing resistance through cryptographic origin binding among the options, whereas simple push can be spammed and rolling app codes (TOTP) remain vulnerable to real-time AiTM proxy relay.',
   failureExplanation:
-    'Review the authentication timeline and SOP SEC-304. An MFA push notification is only triggered after the identity provider successfully verifies the primary password; therefore, repeated prompts prove the password has been breached. Never approve an unsolicited prompt to stop notifications or comply with unverified IT callers. To stop push fatigue attacks permanently, organizations must deploy phishing-resistant FIDO2/WebAuthn authentication.',
+    'Review the authentication timeline and SOP SEC-304. In this environment\'s password-first flow, the IdP log explicitly shows successful primary password verification prior to each push dispatch, confirming credential compromise. Authentication flows differ (e.g., passwordless flows do not use passwords), so telemetry must always be checked. Never approve an unsolicited prompt to stop notifications or comply with unverified IT callers. To defend against push fatigue and AiTM proxy phishing, organizations should deploy phishing-resistant methods such as FIDO2/WebAuthn.',
 };

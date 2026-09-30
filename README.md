@@ -2,6 +2,11 @@
 
 CyberCampus is an interactive cybersecurity learning platform featuring simulated investigative challenges across security domains.
 
+## Project Status
+
+> **Status:** Challenge content complete; 3D campus and final release validation still pending.
+> All 15 challenges across all 5 rooms are fully implemented, registered as live, and playable locally with zero external network dependencies.
+
 ## Routing & URL Conventions
 
 The application follows strict route hierarchy conventions:
@@ -10,14 +15,14 @@ The application follows strict route hierarchy conventions:
 |---|---|---|
 | `/` | Landing page | `http://localhost:5173/` |
 | `/campus` | 2D Interactive Campus Map (5 rooms) | `http://localhost:5173/campus` |
-| `/room/:roomId` | Room Lobby (e.g. Phishing Defense) | `http://localhost:5173/room/phishing` |
-| `/challenge/:challengeId` | Challenge Runner | `http://localhost:5173/challenge/cc-ph-01`, `/challenge/cc-ph-02` |
+| `/room/:roomId` | Room Lobby (e.g. Phishing Defense, Privacy) | `http://localhost:5173/room/privacy` |
+| `/challenge/:challengeId` | Challenge Runner | `http://localhost:5173/challenge/cc-pr-03` |
 | `/results/:attemptId` | Results View (keyed by unique Attempt ID) | `http://localhost:5173/results/att-1727539200000-abcd` |
 | `/dashboard` | User Progress Dashboard | `http://localhost:5173/dashboard` |
 | `/portfolio` | Local Skill Portfolio | `http://localhost:5173/portfolio` |
 
 > **Note on URL Conventions:**
-> - Room pages use the path `/room/:roomId` (for example, `/room/phishing`, not `/campus/phishing`).
+> - Room pages use the path `/room/:roomId` (for example, `/room/privacy`, not `/campus/privacy`).
 > - Results pages use the unique attempt UUID `/results/:attemptId` generated upon submission (not `/results/:challengeId`).
 
 ---
@@ -142,7 +147,65 @@ The application follows strict route hierarchy conventions:
   - Calculate exfiltration volume accurately using reproducible formulas:
     - Encoded Payload Size = 24 queries × 32 bytes/label = 768 bytes.
     - Distinguish encoded payload size from total network frame traffic (24 × 102 bytes = 2,448 bytes) and raw decoded binary data (384 bytes).
-  - Execute proper incident containment: isolate the host at the switch port / VLAN layer and sinkhole the domain on internal resolvers without shutting down or wiping the live system, preserving volatile in-memory evidence.
+
+### 10. USB Drive Forensics (`cc-df-01`)
+- **Room**: Digital Forensics (`forensics`)
+- **Difficulty**: Beginner (100 pts, pass threshold: 70)
+- **Investigation**: Examine a simulated forensic image of a discarded USB drive recovered on campus premises.
+- **Evidence**: USB filesystem directory tree, file metadata, hash table, file carving logs, and digital forensics SOP FOR-101.
+- **Educational Objective**:
+  - Distinguish active files from deleted and carved files, inspect modified and deleted timestamps, and calculate cryptographic hashes (SHA-256) to verify forensic integrity.
+  - Apply chain-of-custody protocols without altering evidence or mounting media write-enabled.
+
+### 11. Browser History Audit (`cc-df-02`)
+- **Room**: Digital Forensics (`forensics`)
+- **Difficulty**: Intermediate (100 pts, pass threshold: 70)
+- **Investigation**: Examine browser forensic telemetry extracted from workstation `WS-FIN-04`.
+- **Evidence**: Browser SQLite history table, downloads record, cache entries, typed URLs, and forensic policy FOR-202.
+- **Educational Objective**:
+  - Correlate timestamps across visits and downloads, reconstruct user navigation paths, and identify suspicious redirect sequences.
+  - Distinguish intentional navigation from automated background assets and drive-by download staging.
+
+### 12. Steganography Detection (`cc-df-03`)
+- **Room**: Digital Forensics (`forensics`)
+- **Difficulty**: Advanced (100 pts, pass threshold: 70)
+- **Investigation**: Examine three PNG image files (`report_cover.png`, `arch_diagram.png`, `badge_photo.png`) to detect hidden covert communications.
+- **Evidence**: Interactive Stego Lens / Bit-Plane Inspector, file metadata & SHA-256 hashes, in-browser LSB payload extraction tool, and SOP FOR-303.
+- **Educational Objective**:
+  - Inspect least-significant bit (LSB) planes, recognize spatial noise patterns, and extract and verify harmless UTF-8 hidden payloads.
+  - Understand that visual appearance, file size, or metadata alone does not prove steganographic alteration.
+
+### 13. Password Audit (`cc-pr-01`)
+- **Room**: Privacy & Account Security (`privacy`)
+- **Difficulty**: Beginner (100 pts, pass threshold: 70)
+- **Investigation**: Review 8 simulated account records across personal and enterprise services.
+- **Evidence**: Account credentials table with password reuse indicators, breach exposure flags, credential age, privilege tier, and MFA status.
+- **Educational Objective**:
+  - Evaluate account risks holistically (password reuse, breach exposure, administrative privilege, lack of MFA).
+  - Prioritize immediate remediation for exposed privileged accounts and apply defense-in-depth principles (unique passphrases, password managers, MFA) rather than relying solely on arbitrary password complexity rules.
+
+### 14. MFA Under Attack (`cc-pr-02`)
+- **Room**: Privacy & Account Security (`privacy`)
+- **Difficulty**: Intermediate (100 pts, pass threshold: 70)
+- **Investigation**: Investigate repeated unsolicited MFA push notifications sent to Lead Systems Architect Elena Rostova.
+- **Evidence**: Multi-system authentication logs with explicit primary password verification preceding push requests, device inventory, push fatigue timeline, and security policy SEC-304.
+- **Educational Objective**:
+  - Recognize MFA fatigue (prompt bombing) attacks and understand evidence-based password compromise based on explicit primary-password authentication logs.
+  - Understand that authentication architectures differ (including passwordless push flows where passwords are not used).
+  - Execute immediate containment (session revocation, out-of-band communication, credential reset) and harden authentication with phishing-resistant standards (FIDO2 / WebAuthn passkeys).
+
+### 15. Data Minimisation Audit (`cc-pr-03`)
+- **Room**: Privacy & Account Security (`privacy`)
+- **Difficulty**: Advanced (100 pts, pass threshold: 70)
+- **Investigation**: Perform a fictional privacy engineering audit on study-planning application "StudyTrack" with documented purposes: core study session scheduling, optional reminders, and optional calendar integration.
+- **Evidence**:
+  - Product requirements document (`PRD-ST-204`) with declared purposes.
+  - Data collection and permission inventory (8 entries).
+  - Draft retention and access-control matrix.
+  - Privacy-by-design policy standard (`POL-PRIV-01`).
+- **Educational Objective**:
+  - Apply core privacy engineering principles: necessity (essential for core functionality), proportionality, purpose limitation (restricting data collection to declared legitimate purposes), storage limitation (retention schedules with automated purging), least privilege (role-based access control), and user control (explicit opt-in consent for optional features).
+  - Classify data inventory items, construct a proportionate retention and access policy, and choose an actionable remediation plan without making country-specific legal determinations.
 
 ---
 

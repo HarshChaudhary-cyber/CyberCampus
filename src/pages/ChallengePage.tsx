@@ -5,7 +5,7 @@ import {
   MessageSquare, Building2, UserCheck, ShieldAlert,
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
   HardDrive, File, Trash2, Globe, Image as ImageIcon, CheckCircle2, Copy, Check,
-  KeyRound, Eye, EyeOff, Smartphone, Bell,
+  KeyRound, Eye, EyeOff, Smartphone, Bell, SlidersHorizontal, Database,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -19,6 +19,7 @@ import type { BrowserHistoryContent, ProxyLogContent } from '../challenges/data/
 import type { StegoEvidenceContent } from '../challenges/data/cc-df-03';
 import type { PasswordAuditContent } from '../challenges/data/cc-pr-01';
 import type { AuthTimelineContent, PushSimulatorContent } from '../challenges/data/cc-pr-02';
+import type { DataInventoryContent, RetentionConfigContent } from '../challenges/data/cc-pr-03';
 import { extractLSBFromPngBytes, type StegoExtractionResult } from '../challenges/data/stego-fixtures';
 import styles from './ChallengePage.module.css';
 
@@ -2792,7 +2793,7 @@ const PushSimulatorViewer: React.FC<{ content: PushSimulatorContent }> = ({ cont
 
           {simFeedback === 'denied' && (
             <div className={`${styles.pushActionFeedback} ${styles['pushActionFeedback--denied']}`} role="status">
-              <strong>Simulated Action: Rejected!</strong> In real life, denying unsolicited pushes stops the login attempt and alerts security. However, repeated prompts prove the attacker already holds your password—credential reset and session revocation are mandatory.
+              <strong>Simulated Action: Rejected!</strong> In real life, denying unsolicited pushes stops the login attempt and alerts security. In this password-first login flow, telemetry confirms the attacker entered your valid password—credential reset and session revocation are mandatory.
             </div>
           )}
 
@@ -2832,6 +2833,194 @@ const PushSimulatorViewer: React.FC<{ content: PushSimulatorContent }> = ({ cont
   );
 };
 
+const DataInventoryViewer: React.FC<{ content: DataInventoryContent }> = ({ content }) => {
+  const [filterCat, setFilterCat] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    content.entries.forEach((e) => set.add(e.category));
+    return Array.from(set);
+  }, [content.entries]);
+
+  const filteredEntries = useMemo(() => {
+    return content.entries.filter((entry) => {
+      if (filterCat !== 'all' && entry.category !== filterCat) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const text = `${entry.name} ${entry.category} ${entry.dataType} ${entry.collectionScope} ${entry.declaredAppPurpose} ${entry.technicalContext}`.toLowerCase();
+        if (!text.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [content.entries, filterCat, searchQuery]);
+
+  return (
+    <div className={styles.dmContainer} role="region" aria-label="Data Collection and Permission Inventory">
+      {/* Header */}
+      <div className={styles.dmHeader}>
+        <div className={styles.dmHeaderTop}>
+          <div className={styles.dmHeaderTitleRow}>
+            <SlidersHorizontal size={18} style={{ color: '#38bdf8' }} aria-hidden="true" />
+            <h4 className={styles.dmTitle}>{content.appName} — Data Collection &amp; Permission Inventory</h4>
+          </div>
+          <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
+            {content.appVersion} • {content.reviewStage}
+          </span>
+        </div>
+
+        {/* Documented Purposes */}
+        <div className={styles.dmPurposesList}>
+          <div className={styles.dmPurposesTitle}>Documented Product Purposes:</div>
+          {content.documentedPurposes.map((p, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: '6px' }}>
+              <span style={{ color: '#38bdf8', fontWeight: 700 }}>•</span>
+              <span>{p}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className={styles.dmToolbar}>
+        <div className={styles.dmFilterButtons}>
+          <button
+            type="button"
+            className={`${styles.dmFilterBtn} ${filterCat === 'all' ? styles['dmFilterBtn--active'] : ''}`}
+            onClick={() => setFilterCat('all')}
+          >
+            All Items ({content.entries.length})
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              className={`${styles.dmFilterBtn} ${filterCat === cat ? styles['dmFilterBtn--active'] : ''}`}
+              onClick={() => setFilterCat(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Search size={14} style={{ color: '#64748b' }} aria-hidden="true" />
+          <input
+            type="text"
+            placeholder="Search inventory items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              background: '#020617',
+              border: '1px solid #334155',
+              borderRadius: '4px',
+              color: '#f8fafc',
+              fontSize: '11.5px',
+              padding: '4px 8px',
+              width: '200px',
+            }}
+            aria-label="Filter inventory items"
+          />
+        </div>
+      </div>
+
+      {/* Inventory Cards List */}
+      <div className={styles.dmInventoryList} role="list" aria-label="Inventory Entries">
+        {filteredEntries.length === 0 ? (
+          <div style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+            No inventory entries match the selected filter.
+          </div>
+        ) : (
+          filteredEntries.map((entry) => (
+            <div
+              key={entry.id}
+              className={styles.dmInventoryCard}
+              tabIndex={0}
+              role="listitem"
+              aria-label={`Inventory item: ${entry.name}`}
+            >
+              <div className={styles.dmCardHeader}>
+                <h5 className={styles.dmCardTitle}>{entry.name}</h5>
+                <span className={styles.dmCategoryBadge}>{entry.category}</span>
+              </div>
+
+              <div className={styles.dmCardGrid}>
+                <div className={styles.dmCardField}>
+                  <span className={styles.dmFieldLabel}>Data Type:</span>
+                  <span className={styles.dmFieldValue}>{entry.dataType}</span>
+                </div>
+                <div className={styles.dmCardField}>
+                  <span className={styles.dmFieldLabel}>Declared Purpose:</span>
+                  <span className={styles.dmFieldValue}>{entry.declaredAppPurpose}</span>
+                </div>
+                <div className={styles.dmCardField}>
+                  <span className={styles.dmFieldLabel}>Collection Scope:</span>
+                  <span className={styles.dmFieldValue}>{entry.collectionScope}</span>
+                </div>
+                <div className={styles.dmCardField}>
+                  <span className={styles.dmFieldLabel}>Retention &amp; Access:</span>
+                  <span className={styles.dmFieldValue}>
+                    Retention: {entry.currentRetention} | Access: {entry.accessControl}
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.dmContextBlock}>
+                <strong style={{ color: '#94a3b8' }}>Technical Context &amp; Operation: </strong>
+                {entry.technicalContext}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+const RetentionConfigViewer: React.FC<{ content: RetentionConfigContent }> = ({ content }) => {
+  return (
+    <div className={styles.dmContainer} role="region" aria-label="Draft Retention and Access Control Configuration Matrix">
+      <div className={styles.dmHeader}>
+        <div className={styles.dmHeaderTop}>
+          <div className={styles.dmHeaderTitleRow}>
+            <Database size={18} style={{ color: '#38bdf8' }} aria-hidden="true" />
+            <h4 className={styles.dmTitle}>{content.systemName}</h4>
+          </div>
+          <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
+            {content.configVersion} • {content.status}
+          </span>
+        </div>
+      </div>
+
+      <div className={styles.dmTableWrapper}>
+        <table className={styles.dmTable} aria-label="Configuration Matrix">
+          <thead>
+            <tr>
+              <th scope="col">Module Name</th>
+              <th scope="col">Permission / Source</th>
+              <th scope="col">Storage Target</th>
+              <th scope="col">Configured Retention</th>
+              <th scope="col">Third-Party Sharing</th>
+              <th scope="col">Specification Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {content.rows.map((row, idx) => (
+              <tr key={idx}>
+                <td style={{ fontWeight: 600, color: '#f8fafc' }}>{row.moduleName}</td>
+                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#38bdf8' }}>{row.permissionOrSource}</td>
+                <td>{row.storageTarget}</td>
+                <td>{row.configuredRetention}</td>
+                <td>{row.thirdPartySharing}</td>
+                <td style={{ color: '#94a3b8' }}>{row.policyComplianceNote}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -2851,6 +3040,12 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'file') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isDataInventory || (raw?.entries && raw?.appName)) {
+      return <DataInventoryViewer content={raw as unknown as DataInventoryContent} />;
+    }
+    if (raw?.isRetentionConfig || (raw?.rows && raw?.systemName)) {
+      return <RetentionConfigViewer content={raw as unknown as RetentionConfigContent} />;
+    }
     if (raw?.isPushSimulator) {
       return <PushSimulatorViewer content={raw as unknown as PushSimulatorContent} />;
     }
@@ -3273,6 +3468,8 @@ export const ChallengePage: React.FC = () => {
     if (ev.type === 'image') return <ImageIcon size={14} aria-hidden="true" />;
     if (ev.type === 'policy' || ev.type === 'file') {
       const raw = ev.content as Record<string, unknown>;
+      if (raw?.isDataInventory) return <SlidersHorizontal size={14} aria-hidden="true" />;
+      if (raw?.isRetentionConfig) return <Database size={14} aria-hidden="true" />;
       if (raw?.isPushSimulator) return <Smartphone size={14} aria-hidden="true" />;
       if (raw?.isBrowserHistory) return <Globe size={14} aria-hidden="true" />;
       if (raw?.isStegoEvidence) return <ImageIcon size={14} aria-hidden="true" />;

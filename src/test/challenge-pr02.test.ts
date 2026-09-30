@@ -35,20 +35,21 @@ describe('Challenge cc-pr-02: "MFA Under Attack" (Privacy & Account Security - I
       expect(LIVE_CHALLENGE_IDS.has('cc-pr-02')).toBe(true);
     });
 
-    it('preserves cc-pr-03 as coming soon', () => {
-      expect(LIVE_CHALLENGE_IDS.has('cc-pr-03')).toBe(false);
+    it('verifies cc-pr-03 is registered and live', () => {
+      expect(LIVE_CHALLENGE_IDS.has('cc-pr-03')).toBe(true);
       const ch03 = getChallenge('cc-pr-03');
-      expect(ch03).toBeUndefined();
+      expect(ch03).toBeDefined();
+      expect(ch03?.id).toBe('cc-pr-03');
     });
 
-    it('preserves all previous 13 live challenges across rooms for a total of 14', () => {
-      expect(LIVE_CHALLENGE_IDS.size).toBe(14);
+    it('preserves all live challenges across rooms for a total of 15', () => {
+      expect(LIVE_CHALLENGE_IDS.size).toBe(15);
       const expectedLiveIds = [
         'cc-ph-01', 'cc-ph-02', 'cc-ph-03',
         'cc-so-01', 'cc-so-02', 'cc-so-03',
         'cc-nw-01', 'cc-nw-02', 'cc-nw-03',
         'cc-df-01', 'cc-df-02', 'cc-df-03',
-        'cc-pr-01', 'cc-pr-02',
+        'cc-pr-01', 'cc-pr-02', 'cc-pr-03',
       ];
       for (const id of expectedLiveIds) {
         expect(LIVE_CHALLENGE_IDS.has(id)).toBe(true);
@@ -362,6 +363,40 @@ describe('Challenge cc-pr-02: "MFA Under Attack" (Privacy & Account Security - I
       expect(scoreResult.earnedScore).toBe(85);
       expect(scoreResult.finalScore).toBe(85);
       expect(scoreResult.passed).toBe(true);
+    });
+  });
+
+  // ── Challenge cc-pr-02 Educational Wording Regression (Task 7C) ─────────────
+  describe('Challenge cc-pr-02 Educational Wording Nuance (Task 7C)', () => {
+    it('grounds password compromise conclusion on explicit authentication log telemetry', () => {
+      const step1 = challengeCC_PR_02.steps[0];
+      const opt = step1.items.find((i) => i.id === 'att-mfa-fatigue-password-compromised');
+      expect(opt?.label).toContain('scenario authentication logs explicitly record successful primary password entry');
+      expect(challengeCC_PR_02.successExplanation).toContain('authentication log in this scenario explicitly records successful primary-password verification');
+      expect(challengeCC_PR_02.failureExplanation).toContain('password-first flow, the IdP log explicitly shows successful primary password verification');
+    });
+
+    it('clarifies that authentication flows differ, including passwordless push architectures', () => {
+      const sopEv = challengeCC_PR_02.evidence.find((e) => e.id === 'ev-mfa-sop');
+      const raw = sopEv?.content as { rules: string[] };
+      const rule1 = raw.rules.find((r) => r.startsWith('Rule 1'));
+      expect(rule1).toContain('password-first authentication architectures');
+      expect(rule1).toContain('passwordless or username-initiated push flows');
+
+      expect(challengeCC_PR_02.hints[1]).toContain('passwordless push');
+      expect(challengeCC_PR_02.failureExplanation).toContain('passwordless flows do not use passwords');
+    });
+
+    it('avoids absolute claims that FIDO2 permanently eliminates all account attacks', () => {
+      const sopEv = challengeCC_PR_02.evidence.find((e) => e.id === 'ev-mfa-sop');
+      const raw = sopEv?.content as { rules: string[] };
+      const allRulesText = raw.rules.join('\n');
+      expect(allRulesText).toContain('Among the available options');
+      expect(allRulesText).toContain('no single mechanism eliminates all possible endpoint malware or physical attacks');
+
+      const step3 = challengeCC_PR_02.steps[2];
+      expect(step3.prompt).not.toContain('definitively eliminate');
+      expect(step3.prompt).toContain('among the available options');
     });
   });
 });
