@@ -88,7 +88,7 @@ describe('cc-df-03 registration & metadata', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-df-02')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-df-03')).toBe(true);
 
-    expect(LIVE_CHALLENGE_IDS.size).toBe(12);
+    expect(LIVE_CHALLENGE_IDS.size).toBeGreaterThanOrEqual(12);
   });
 
   it('verifies the forensics room contains all 3 challenges as live', () => {

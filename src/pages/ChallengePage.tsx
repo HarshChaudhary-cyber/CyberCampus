@@ -5,6 +5,7 @@ import {
   MessageSquare, Building2, UserCheck, ShieldAlert,
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
   HardDrive, File, Trash2, Globe, Image as ImageIcon, CheckCircle2, Copy, Check,
+  KeyRound, Eye, EyeOff,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -16,6 +17,7 @@ import type { EvidenceItem, Step, StepResponse } from '../types';
 import type { FileSystemContent } from '../challenges/data/cc-df-01';
 import type { BrowserHistoryContent, ProxyLogContent } from '../challenges/data/cc-df-02';
 import type { StegoEvidenceContent } from '../challenges/data/cc-df-03';
+import type { PasswordAuditContent } from '../challenges/data/cc-pr-01';
 import { extractLSBFromPngBytes, type StegoExtractionResult } from '../challenges/data/stego-fixtures';
 import styles from './ChallengePage.module.css';
 
@@ -2322,6 +2324,240 @@ const SteganographyViewer: React.FC<{ content: StegoEvidenceContent }> = ({ cont
   );
 };
 
+const PasswordAuditViewer: React.FC<{ content: PasswordAuditContent }> = ({ content }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [exposureFilter, setExposureFilter] = useState<'all' | 'exposed' | 'clean'>('all');
+  const [privilegeFilter, setPrivilegeFilter] = useState<string>('all');
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
+  const [revealAll, setRevealAll] = useState(false);
+
+  const togglePassword = (accId: string) => {
+    setRevealedPasswords((prev) => ({
+      ...prev,
+      [accId]: !prev[accId],
+    }));
+  };
+
+  const handleToggleRevealAll = () => {
+    const next = !revealAll;
+    setRevealAll(next);
+    const updated: Record<string, boolean> = {};
+    content.accounts.forEach((acc) => {
+      updated[acc.id] = next;
+    });
+    setRevealedPasswords(updated);
+  };
+
+  const filteredAccounts = useMemo(() => {
+    return content.accounts.filter((acc) => {
+      if (exposureFilter === 'exposed' && !acc.breachStatus.isExposed) return false;
+      if (exposureFilter === 'clean' && acc.breachStatus.isExposed) return false;
+      if (privilegeFilter !== 'all' && acc.privilegeLevel !== privilegeFilter) return false;
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const matchesName = acc.serviceName.toLowerCase().includes(q);
+        const matchesUser = acc.username.toLowerCase().includes(q);
+        const matchesRole = acc.roleDescription.toLowerCase().includes(q);
+        if (!matchesName && !matchesUser && !matchesRole) return false;
+      }
+      return true;
+    });
+  }, [content.accounts, exposureFilter, privilegeFilter, searchTerm]);
+
+  return (
+    <div className={styles.paContainer} role="region" aria-label="Credential Audit Ledger">
+      {/* Header */}
+      <div className={styles.paHeader}>
+        <div className={styles.paHeaderTop}>
+          <div className={styles.paTitleRow}>
+            <KeyRound size={18} color="#38bdf8" aria-hidden="true" />
+            <h3 className={styles.paTitle}>{content.title}</h3>
+          </div>
+          <div className={styles.paMetaRow}>
+            <span className={styles.paMetaItem}>
+              Target: <strong>{content.targetUser.name}</strong> ({content.targetUser.title})
+            </span>
+            <span className={styles.paMetaItem}>
+              Dept: <strong>{content.targetUser.department}</strong>
+            </span>
+            <span className={styles.paMetaItem}>
+              Audit Date: <strong>{content.auditDate}</strong>
+            </span>
+          </div>
+        </div>
+        <p className={styles.paOverview}>{content.overviewSummary}</p>
+      </div>
+
+      {/* Toolbar */}
+      <div className={styles.paToolbar}>
+        <div className={styles.paSearchGroup}>
+          <Search size={14} color="#94a3b8" aria-hidden="true" />
+          <input
+            type="text"
+            className={styles.paSearchInput}
+            placeholder="Search accounts or roles..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Search credential audit accounts"
+          />
+        </div>
+
+        <div className={styles.paFilterGroup}>
+          <button
+            type="button"
+            className={`${styles.paFilterBtn} ${exposureFilter === 'all' ? styles['paFilterBtn--active'] : ''}`}
+            onClick={() => setExposureFilter('all')}
+          >
+            All ({content.accounts.length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.paFilterBtn} ${exposureFilter === 'exposed' ? styles['paFilterBtn--active'] : ''}`}
+            onClick={() => setExposureFilter('exposed')}
+          >
+            Exposed ({content.accounts.filter((a) => a.breachStatus.isExposed).length})
+          </button>
+          <button
+            type="button"
+            className={`${styles.paFilterBtn} ${exposureFilter === 'clean' ? styles['paFilterBtn--active'] : ''}`}
+            onClick={() => setExposureFilter('clean')}
+          >
+            Clean ({content.accounts.filter((a) => !a.breachStatus.isExposed).length})
+          </button>
+
+          <select
+            className={styles.paFilterBtn}
+            value={privilegeFilter}
+            onChange={(e) => setPrivilegeFilter(e.target.value)}
+            aria-label="Filter by privilege level"
+          >
+            <option value="all">All Privileges</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+
+          <button
+            type="button"
+            className={styles.paGlobalToggleBtn}
+            onClick={handleToggleRevealAll}
+            aria-label={revealAll ? 'Mask all passwords' : 'Reveal all passwords'}
+          >
+            {revealAll ? <EyeOff size={13} aria-hidden="true" /> : <Eye size={13} aria-hidden="true" />}
+            <span>{revealAll ? 'Mask All' : 'Reveal All'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Account Cards */}
+      <div className={styles.paAccountGrid}>
+        {filteredAccounts.map((acc) => {
+          const isRevealed = Boolean(revealedPasswords[acc.id] ?? revealAll);
+          const isAtRisk = acc.requiresRemediation;
+
+          return (
+            <div
+              key={acc.id}
+              className={`${styles.paAccountCard} ${
+                isAtRisk ? styles['paAccountCard--atRisk'] : styles['paAccountCard--safe']
+              }`}
+            >
+              {/* Card Top */}
+              <div className={styles.paCardHeader}>
+                <div className={styles.paServiceInfo}>
+                  <span className={styles.paServiceName}>{acc.serviceName}</span>
+                  <span className={styles.paRoleDesc}>{acc.roleDescription}</span>
+                </div>
+                <div className={styles.paBadgesTop}>
+                  <span
+                    className={`${styles.paPrivilegeBadge} ${
+                      styles[`paPrivilegeBadge--${acc.privilegeLevel}`]
+                    }`}
+                  >
+                    {acc.privilegeLevel} Privilege
+                  </span>
+                  {acc.reuseLink?.isReused && (
+                    <span className={`${styles.paIndicator} ${styles['paIndicator--reuse']}`}>
+                      Reused with {acc.reuseLink.reusedWithServiceName}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Credential Row */}
+              <div className={styles.paCredentialRow}>
+                <div className={styles.paUserAndPass}>
+                  <span className={styles.paUsernameTag}>User: {acc.username}</span>
+                  <div className={styles.paPassBox}>
+                    <span>{isRevealed ? acc.passwordDisplay : '••••••••••••••••'}</span>
+                    <button
+                      type="button"
+                      className={styles.paEyeBtn}
+                      onClick={() => togglePassword(acc.id)}
+                      aria-label={`${isRevealed ? 'Hide' : 'Show'} password for ${acc.serviceName}`}
+                      title={isRevealed ? 'Mask password' : 'Show password'}
+                    >
+                      {isRevealed ? <EyeOff size={13} aria-hidden="true" /> : <Eye size={13} aria-hidden="true" />}
+                    </button>
+                    <span style={{ fontSize: '10.5px', color: '#64748b' }}>({acc.passwordLength} chars)</span>
+                  </div>
+                </div>
+                <span className={styles.paCharPattern}>{acc.passwordPattern}</span>
+              </div>
+
+              {/* Status Indicators */}
+              <div className={styles.paStatusIndicators}>
+                {/* Breach Status */}
+                {acc.breachStatus.isExposed ? (
+                  <span className={`${styles.paIndicator} ${styles['paIndicator--exposed']}`}>
+                    <AlertCircle size={13} aria-hidden="true" />
+                    <span>Exposed: {acc.breachStatus.breachSource ?? 'Public Breach Dumps'}</span>
+                  </span>
+                ) : (
+                  <span className={`${styles.paIndicator} ${styles['paIndicator--clean']}`}>
+                    <CheckCircle2 size={13} aria-hidden="true" />
+                    <span>0 Breach Matches</span>
+                  </span>
+                )}
+
+                {/* MFA Status */}
+                {acc.mfaStatus.type === 'none' ? (
+                  <span className={`${styles.paIndicator} ${styles['paIndicator--mfaNone']}`}>
+                    <AlertCircle size={13} aria-hidden="true" />
+                    <span>MFA Disabled</span>
+                  </span>
+                ) : acc.mfaStatus.type === 'sms' ? (
+                  <span className={`${styles.paIndicator} ${styles['paIndicator--mfaSms']}`}>
+                    <ShieldAlert size={13} aria-hidden="true" />
+                    <span>MFA: SMS OTP (Weak)</span>
+                  </span>
+                ) : (
+                  <span className={`${styles.paIndicator} ${styles['paIndicator--mfaStrong']}`}>
+                    <ShieldCheck size={13} aria-hidden="true" />
+                    <span>MFA: {acc.mfaStatus.label}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Notes & Context */}
+              <div className={styles.paNotesSection}>
+                <div>
+                  <strong>Audit Findings: </strong>
+                  <span>{acc.remediationReason}</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                  Last Changed: {acc.lastChangedDate} | {acc.notes}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -2341,6 +2577,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'file') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isPasswordAudit || Array.isArray(raw?.accounts)) {
+      return <PasswordAuditViewer content={raw as unknown as PasswordAuditContent} />;
+    }
     if (raw?.isStegoEvidence || Array.isArray(raw?.exhibits)) {
       return <SteganographyViewer content={raw as unknown as StegoEvidenceContent} />;
     }
@@ -2756,6 +2995,7 @@ export const ChallengePage: React.FC = () => {
       const raw = ev.content as Record<string, unknown>;
       if (raw?.isBrowserHistory) return <Globe size={14} aria-hidden="true" />;
       if (raw?.isStegoEvidence) return <ImageIcon size={14} aria-hidden="true" />;
+      if (raw?.isPasswordAudit) return <KeyRound size={14} aria-hidden="true" />;
       return <Building2 size={14} aria-hidden="true" />;
     }
     if (ev.type === 'network' || ev.type === 'network-packet') return <Network size={14} aria-hidden="true" />;
