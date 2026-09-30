@@ -3000,7 +3000,7 @@ const RetentionConfigViewer: React.FC<{ content: RetentionConfigContent }> = ({ 
               <th scope="col">Storage Target</th>
               <th scope="col">Configured Retention</th>
               <th scope="col">Third-Party Sharing</th>
-              <th scope="col">Specification Note</th>
+              <th scope="col">Operational Handling</th>
             </tr>
           </thead>
           <tbody>
@@ -3011,7 +3011,7 @@ const RetentionConfigViewer: React.FC<{ content: RetentionConfigContent }> = ({ 
                 <td>{row.storageTarget}</td>
                 <td>{row.configuredRetention}</td>
                 <td>{row.thirdPartySharing}</td>
-                <td style={{ color: '#94a3b8' }}>{row.policyComplianceNote}</td>
+                <td style={{ color: '#94a3b8' }}>{row.operationalHandling}</td>
               </tr>
             ))}
           </tbody>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect } from 'vitest';
 import {
   ALL_CHALLENGES,
@@ -16,6 +17,9 @@ import {
   getCorrectAnswerDisplay,
 } from '../challenges/evaluator';
 import { computeScore } from '../store';
+import { CampusPage } from '../pages/CampusPage';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 describe('Challenge cc-pr-03: "Data Minimisation Audit" (Privacy & Account Security - Advanced)', () => {
   // ── Registration & Registry Integrity ───────────────────────────────────────
@@ -135,6 +139,30 @@ describe('Challenge cc-pr-03: "Data Minimisation Audit" (Privacy & Account Secur
       expect(content.rows[4].moduleName).toContain('Social Discovery');
       expect(content.rows[5].moduleName).toContain('Context Sensor');
       expect(content.rows[6].moduleName).toContain('Ad Mediation');
+    });
+
+    it('neutralizes pre-submission evidence: keeps observable facts while avoiding classification spoiler phrases', () => {
+      const invEv = challengeCC_PR_03.evidence.find((e) => e.id === 'ev-data-inventory');
+      const invContent = invEv?.content as unknown as DataInventoryContent;
+
+      for (const entry of invContent.entries) {
+        expect(entry.technicalContext).not.toContain('violates purpose limitation');
+        expect(entry.technicalContext).not.toContain('wholly disproportionate');
+        expect(entry.technicalContext).not.toContain('unjustified');
+      }
+
+      const cfgEv = challengeCC_PR_03.evidence.find((e) => e.id === 'ev-retention-access-config');
+      const cfgContent = cfgEv?.content as unknown as RetentionConfigContent;
+
+      for (const row of cfgContent.rows) {
+        expect(row.operationalHandling).toBeDefined();
+        expect(row.operationalHandling).not.toContain('Compliant with');
+        expect(row.operationalHandling).not.toContain('OVERLY BROAD');
+        expect(row.operationalHandling).not.toContain('DISPROPORTIONATE');
+        expect(row.operationalHandling).not.toContain('EXCESSIVE');
+        expect(row.operationalHandling).not.toContain('STORAGE LIMITATION DEFICIT');
+        expect(row.operationalHandling).not.toContain('UNJUSTIFIED');
+      }
     });
 
     it('verifies privacy principles articulate data minimisation, purpose limitation, proportionality, and storage limitation', () => {
@@ -400,30 +428,75 @@ describe('Challenge cc-pr-03: "Data Minimisation Audit" (Privacy & Account Secur
       expect(scoreResult.passed).toBe(false);
     });
 
-    it('penalizes blanket uniform selection: all Excessive on Step 1 yields 20/40 pts', () => {
+    // ── Scoring Combinations with Uniform "Excessive" Guessing (Task 7C.1) ────
+    describe('scoring combinations with uniform "Excessive" on Step 1 (20/40 pts)', () => {
       const allExcessive = Object.fromEntries(
         challengeCC_PR_03.steps[0].items.map((i) => [i.id, 'Excessive or unjustified'])
       );
 
-      // Blanket Excessive (20) + perfect Step 2 (30) + perfect Step 3 (30) = 80 pts (passes with 20 pt penalty)
-      const responsesPass = buildStepResponses(challengeCC_PR_03.steps, {
-        'step-classify-inventory': allExcessive,
-        'step-configure-proportions': correctStep2,
-        'step-remediation-plan': correctStep3,
+      it('awards 80/100 and passes when Steps 2 and 3 are correct (20 + 30 + 30 = 80)', () => {
+        const responses = buildStepResponses(challengeCC_PR_03.steps, {
+          'step-classify-inventory': allExcessive, // 20
+          'step-configure-proportions': correctStep2, // 30
+          'step-remediation-plan': correctStep3, // 30
+        });
+        const res = computeScore(responses, 0, challengeCC_PR_03.passThreshold);
+        expect(res.earnedScore).toBe(80);
+        expect(res.finalScore).toBe(80);
+        expect(res.passed).toBe(true);
       });
-      const resPass = computeScore(responsesPass, 0, challengeCC_PR_03.passThreshold);
-      expect(resPass.earnedScore).toBe(80);
-      expect(resPass.passed).toBe(true);
 
-      // Blanket Excessive (20) + missed Step 3 (0) + perfect Step 2 (30) = 50 pts (fails threshold)
-      const responsesFail = buildStepResponses(challengeCC_PR_03.steps, {
-        'step-classify-inventory': allExcessive,
-        'step-configure-proportions': correctStep2,
-        'step-remediation-plan': 'plan-disable-all-features',
+      it('awards 70/100 and passes when ONE guided-form field in Step 2 is incorrect and Step 3 is correct (20 + 20 + 30 = 70)', () => {
+        // Step 2 has 3 fields (10 pts each). 1 incorrect field leaves 2 correct fields = 20 pts.
+        const oneWrongStep2 = {
+          ...correctStep2,
+          'cfg-access-telemetry':
+            'Distribute advertising identifiers and location telemetry to commercial ad brokers for monetized analytics', // distractor
+        };
+
+        const responses = buildStepResponses(challengeCC_PR_03.steps, {
+          'step-classify-inventory': allExcessive, // 20
+          'step-configure-proportions': oneWrongStep2, // 20
+          'step-remediation-plan': correctStep3, // 30
+        });
+        const res = computeScore(responses, 0, challengeCC_PR_03.passThreshold);
+        expect(res.earnedScore).toBe(70);
+        expect(res.finalScore).toBe(70);
+        expect(res.passed).toBe(true);
       });
-      const resFail = computeScore(responsesFail, 0, challengeCC_PR_03.passThreshold);
-      expect(resFail.earnedScore).toBe(50);
-      expect(resFail.passed).toBe(false);
+
+      it('awards 60/100 and fails when TWO guided-form fields in Step 2 are incorrect and Step 3 is correct (20 + 10 + 30 = 60)', () => {
+        // Step 2 has 3 fields (10 pts each). 2 incorrect fields leave 1 correct field = 10 pts.
+        const twoWrongStep2 = {
+          'cfg-calendar-scope':
+            'Full device calendar access granted across all personal, medical, and work accounts', // distractor
+          'cfg-retention-schedule': correctStep2['cfg-retention-schedule'], // 10 pts correct
+          'cfg-access-telemetry':
+            'Expose all user study schedules through an unauthenticated public API for social networking', // distractor
+        };
+
+        const responses = buildStepResponses(challengeCC_PR_03.steps, {
+          'step-classify-inventory': allExcessive, // 20
+          'step-configure-proportions': twoWrongStep2, // 10
+          'step-remediation-plan': correctStep3, // 30
+        });
+        const res = computeScore(responses, 0, challengeCC_PR_03.passThreshold);
+        expect(res.earnedScore).toBe(60);
+        expect(res.finalScore).toBe(60);
+        expect(res.passed).toBe(false);
+      });
+
+      it('awards 50/100 and fails when Step 3 is incorrect despite perfect Step 2 (20 + 30 + 0 = 50)', () => {
+        const responses = buildStepResponses(challengeCC_PR_03.steps, {
+          'step-classify-inventory': allExcessive, // 20
+          'step-configure-proportions': correctStep2, // 30
+          'step-remediation-plan': 'plan-notice-only-keep-all', // 0
+        });
+        const res = computeScore(responses, 0, challengeCC_PR_03.passThreshold);
+        expect(res.earnedScore).toBe(50);
+        expect(res.finalScore).toBe(50);
+        expect(res.passed).toBe(false);
+      });
     });
 
     it('correctly deducts 10 points per hint used', () => {
@@ -486,6 +559,26 @@ describe('Challenge cc-pr-03: "Data Minimisation Audit" (Privacy & Account Secur
       const step3 = challengeCC_PR_03.steps[2];
       const display = getCorrectAnswerDisplay(step3);
       expect(display).toContain('Remediate and Enforce Minimisation');
+    });
+  });
+
+  // ── Campus Page Copy (Task 7C.1) ───────────────────────────────────────────
+  describe('Campus Page Copy (Task 7C.1)', () => {
+    it('displays updated campus product wording and states five rooms and fifteen challenges are available', () => {
+      render(
+        React.createElement(
+          MemoryRouter,
+          null,
+          React.createElement(CampusPage, null)
+        )
+      );
+
+      expect(screen.getByText('Campus Map')).toBeDefined();
+      expect(
+        screen.getByText(/Five rooms and fifteen challenges are available across the campus/i)
+      ).toBeDefined();
+      expect(screen.queryByText(/2D Campus Map — Phase 1/i)).toBeNull();
+      expect(screen.queryByText(/Explore Phishing Defense and Security Operations/i)).toBeNull();
     });
   });
 });

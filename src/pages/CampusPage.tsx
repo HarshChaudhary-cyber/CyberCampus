@@ -67,11 +67,11 @@ export const CampusPage: React.FC = () => {
         <header className={styles.header}>
           <span className={styles.pill}>
             <Building2 size={12} aria-hidden="true" />
-            2D Campus Map — Phase 1
+            Campus Map
           </span>
           <h1 className={styles.title}>Choose a Room</h1>
           <p className={styles.subtitle}>
-            Each room contains three challenges. Explore Phishing Defense and Security Operations — the other rooms open as more challenges are built.
+            Five rooms and fifteen challenges are available across the campus. Select a room to begin an interactive investigation.
           </p>
         </header>
 

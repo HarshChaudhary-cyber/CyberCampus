@@ -24,15 +24,13 @@ export interface DataInventoryContent {
   reviewStage: string;
   documentedPurposes: string[];
   entries: DataInventoryEntry[];
-}
-
-export interface RetentionConfigRow {
+}export interface RetentionConfigRow {
   moduleName: string;
   permissionOrSource: string;
   storageTarget: string;
   configuredRetention: string;
   thirdPartySharing: string;
-  policyComplianceNote: string;
+  operationalHandling: string;
 }
 
 export interface RetentionConfigContent {
@@ -100,9 +98,9 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'Scheduling, organizing, and tracking personal study blocks (Documented Purpose 1).',
             technicalContext:
-              'Directly delivers the core functionality of the application. Required for rendering the study timetable, calculating cumulative study hours, and maintaining the user’s study log.',
+              'Core data structure used for rendering study timetable blocks, calculating cumulative study hours, and maintaining the user study log in the active account.',
             currentRetention:
-              'Retained in active database while user account remains open; erased upon account termination.',
+              'Retained in active database while user account remains open; erased upon account closure.',
             accessControl:
               'First-party application service only; encrypted in transit via TLS 1.3 and at rest via AES-256.',
           },
@@ -116,7 +114,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'Accurate temporal scheduling of study blocks and alarm triggers across local day boundaries (Documented Purposes 1 & 2).',
             technicalContext:
-              'Required to ensure study blocks and alert timers trigger at the correct local hour and adapt seamlessly when users travel across time zones.',
+              'Queried from device locale to calculate local start and end times for scheduled study sessions and alert triggers across timezone changes.',
             currentRetention:
               'Cached in local client configuration; latest active timezone stored in account profile.',
             accessControl:
@@ -132,7 +130,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'Optional upcoming session reminders (Documented Purpose 2).',
             technicalContext:
-              'Only requested after an affirmative user opt-in toggle. Disabling or declining this permission has zero effect on core study session scheduling. Notifications trigger locally without accessing contacts, location, or browsing telemetry.',
+              'Requested only after an affirmative user toggle in preferences. Declining this permission leaves core session scheduling unaffected. Reminders trigger locally without accessing contacts, location, or network identifiers.',
             currentRetention:
               'Maintained while reminder toggle remains enabled in user settings.',
             accessControl:
@@ -148,7 +146,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'Optional calendar synchronization for scheduled study blocks (Documented Purpose 3).',
             technicalContext:
-              'Scoped exclusively to creating, updating, and deleting study blocks on the specific calendar designated by the user (e.g. "Study Schedule"). Does not read, index, or transmit events from unselected personal, work, or medical calendars.',
+              'Requested only after an affirmative user toggle to sync with a chosen external calendar. Scoped to create, update, and remove events on that designated calendar. Does not read or access unselected personal or work calendars.',
             currentRetention:
               'OAuth refresh token valid until user disconnects calendar integration or revokes authorization in account settings.',
             accessControl:
@@ -164,7 +162,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'PRD draft notation: "Facilitate finding potential study partners who might also use the application."',
             technicalContext:
-              'The application contains zero peer messaging, public profile directories, or collaborative study rooms. Harvesting the entire address book is completely disconnected from personal study scheduling, lacks user-directed recipient selection, and violates purpose limitation.',
+              'Application specification contains no messaging, social feed, or peer study rooms. Requests READ_CONTACTS globally and uploads all stored contact cards to backend tables without a user-directed recipient selection interface.',
             currentRetention:
               'Stored indefinitely on backend marketing and user-graph database tables.',
             accessControl:
@@ -180,7 +178,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'PRD draft notation: "Automatically detect if user is studying at a library, cafe, or at home."',
             technicalContext:
-              'Study sessions are planned and logged based on time and topic, not physical coordinates. Notification reminders trigger strictly on clock time. Constant GPS tracking is wholly disproportionate and unnecessary for a study scheduler.',
+              'Study sessions and alert triggers execute based on clock time and user-entered schedules. Requests background GPS location continuously every 60 seconds regardless of whether a study session is active, and streams coordinates to an external telemetry provider.',
             currentRetention:
               'Retained in raw location trail database for 180 days.',
             accessControl:
@@ -196,7 +194,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'PRD draft notation: "Monetization attribution and commercial market analytics."',
             technicalContext:
-              'StudyTrack is specified as an ad-free personal productivity utility with no advertising in its core functional specification. Persistent ad trackers enable cross-app profiling completely outside the declared functional scope.',
+              'StudyTrack functional specification describes an ad-free utility with no in-app advertising slots. Embedded third-party SDK accesses hardware identifiers and IDFA/GAID tokens upon launch and transmits install signals across 3 commercial ad networks.',
             currentRetention:
               'Retained by third-party ad networks according to their independent commercial schedules.',
             accessControl:
@@ -212,7 +210,7 @@ export const challengeCC_PR_03: Challenge = {
             declaredAppPurpose:
               'Backend architecture draft note: "Preserve historical telemetry for potential re-engagement."',
             technicalContext:
-              'No purge pipeline, hard-deletion routine, or retention schedule exists. Violates storage limitation by permanently storing discarded personal study data and closed account records with no expiry.',
+              'User deletions and account closure requests mark rows with an is_deleted=true flag in the active database. No automated hard-deletion routine, purge pipeline, or retention expiration schedule is configured, leaving discarded records in storage indefinitely.',
             currentRetention:
               'Permanent / Indefinite active database residency.',
             accessControl:
@@ -239,7 +237,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Encrypted User Database (PostgreSQL / AES-256)',
             configuredRetention: 'Active Account Lifetime (Hard-purge upon account closure)',
             thirdPartySharing: 'None (First-party strictly isolated)',
-            policyComplianceNote: 'Compliant with Purpose 1 (Core Scheduling).',
+            operationalHandling:
+              'Synchronized to encrypted user account database; hard-deleted upon user account closure.',
           },
           {
             moduleName: 'Locale Synchronizer',
@@ -247,7 +246,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Local Client State & Account Profile',
             configuredRetention: 'Active Account Lifetime',
             thirdPartySharing: 'None (First-party strictly isolated)',
-            policyComplianceNote: 'Compliant with Purpose 1 & 2 (Temporal Scheduling).',
+            operationalHandling:
+              'Queried locally on application launch and system timezone changes; updated in place; erased upon account closure.',
           },
           {
             moduleName: 'Upcoming Session Alerts',
@@ -255,7 +255,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Local Device Notification Daemon',
             configuredRetention: 'Active while user notification toggle is ON',
             thirdPartySharing: 'None (First-party push dispatch only)',
-            policyComplianceNote: 'Compliant with Purpose 2 (Optional, User-Controlled).',
+            operationalHandling:
+              'Requires affirmative user toggle in preferences; can be disabled at any time; clears local notification schedule.',
           },
           {
             moduleName: 'External Calendar Sync',
@@ -263,7 +264,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'User-Selected Calendar Only',
             configuredRetention: 'Active while integration is connected',
             thirdPartySharing: 'Direct sync with user-selected calendar service',
-            policyComplianceNote: 'Compliant with Purpose 3 (Optional, Granular Least Privilege).',
+            operationalHandling:
+              'Requires affirmative user OAuth connection; revocable in settings; restricted to write events to the single selected calendar.',
           },
           {
             moduleName: 'Social Discovery (Draft)',
@@ -271,7 +273,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Cloud User Graph Database',
             configuredRetention: 'Indefinite',
             thirdPartySharing: 'Internal Analytics Cluster',
-            policyComplianceNote: 'OVERLY BROAD & UNJUSTIFIED (No peer features exist).',
+            operationalHandling:
+              'Full address book uploaded to backend upon app install; no recipient selection UI; no automated deletion routine.',
           },
           {
             moduleName: 'Context Sensor (Draft)',
@@ -279,7 +282,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Location Telemetry Cluster',
             configuredRetention: '180 Days in raw log trails',
             thirdPartySharing: 'Location Telemetry SDK',
-            policyComplianceNote: 'DISPROPORTIONATE (Sessions are temporal, not geographic).',
+            operationalHandling:
+              'Continuous background GPS polling every 60 seconds; raw coordinates transmitted to external telemetry service.',
           },
           {
             moduleName: 'Ad Mediation SDK',
@@ -287,7 +291,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Commercial Ad Network Infrastructure',
             configuredRetention: 'Determined by external ad brokers',
             thirdPartySharing: '3 External Ad Networks',
-            policyComplianceNote: 'EXCESSIVE & UNJUSTIFIED (Product is an ad-free utility).',
+            operationalHandling:
+              'Embedded monetization SDK initializes at launch; broadcasts persistent device identifiers across 3 ad networks.',
           },
           {
             moduleName: 'Purge & Erasure Pipeline',
@@ -295,7 +300,8 @@ export const challengeCC_PR_03: Challenge = {
             storageTarget: 'Primary Production DB',
             configuredRetention: 'Indefinite (No purge mechanism)',
             thirdPartySharing: 'Production Engineering',
-            policyComplianceNote: 'STORAGE LIMITATION DEFICIT (Deleted data must be purged).',
+            operationalHandling:
+              'Applies soft-delete flag (is_deleted=true) in database; no automated purging routine; records remain in storage indefinitely.',
           },
         ],
       } as unknown as Record<string, unknown>,
