@@ -5,7 +5,7 @@ import {
   MessageSquare, Building2, UserCheck, ShieldAlert,
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
   HardDrive, File, Trash2, Globe, Image as ImageIcon, CheckCircle2, Copy, Check,
-  KeyRound, Eye, EyeOff,
+  KeyRound, Eye, EyeOff, Smartphone, Bell,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -18,6 +18,7 @@ import type { FileSystemContent } from '../challenges/data/cc-df-01';
 import type { BrowserHistoryContent, ProxyLogContent } from '../challenges/data/cc-df-02';
 import type { StegoEvidenceContent } from '../challenges/data/cc-df-03';
 import type { PasswordAuditContent } from '../challenges/data/cc-pr-01';
+import type { AuthTimelineContent, PushSimulatorContent } from '../challenges/data/cc-pr-02';
 import { extractLSBFromPngBytes, type StegoExtractionResult } from '../challenges/data/stego-fixtures';
 import styles from './ChallengePage.module.css';
 
@@ -2558,6 +2559,279 @@ const PasswordAuditViewer: React.FC<{ content: PasswordAuditContent }> = ({ cont
   );
 };
 
+const AuthTimelineViewer: React.FC<{ content: AuthTimelineContent }> = ({ content }) => {
+  const [filterType, setFilterType] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const filteredEvents = useMemo(() => {
+    return content.events.filter((ev) => {
+      if (filterType === 'logins' && ev.eventType !== 'legitimate_login' && ev.eventType !== 'logout') return false;
+      if (filterType === 'push' && !ev.eventType.startsWith('push_')) return false;
+      if (filterType === 'unfamiliar' && !ev.sourceIp.startsWith('203.0.113')) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const text = `${ev.timestamp} ${ev.serviceName} ${ev.sourceIp} ${ev.location} ${ev.device} ${ev.status} ${ev.details}`.toLowerCase();
+        if (!text.includes(q)) return false;
+      }
+
+      return true;
+    });
+  }, [content.events, filterType, searchQuery]);
+
+  return (
+    <div className={styles.mfaLogContainer} role="region" aria-label="Authentication and MFA Event Log">
+      {/* Header Info */}
+      <div className={styles.mfaLogHeader}>
+        <div className={styles.mfaLogHeaderTop}>
+          <div className={styles.mfaLogTitleRow}>
+            <Activity size={18} style={{ color: '#38bdf8' }} aria-hidden="true" />
+            <h4 className={styles.mfaLogTitle}>Corporate Identity Provider (IdP) — Unified Access & MFA Audit Log</h4>
+          </div>
+          <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
+            Audit Date: {content.auditDate}
+          </span>
+        </div>
+        <div className={styles.mfaLogMeta}>
+          <span><strong>User:</strong> {content.targetUser.name} ({content.targetUser.email})</span>
+          <span><strong>Role:</strong> {content.targetUser.title}</span>
+          <span><strong>Dept:</strong> {content.targetUser.department}</span>
+          <span><strong>Office:</strong> {content.targetUser.officeLocation}</span>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className={styles.mfaLogToolbar}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {[
+            { id: 'all', label: `All Events (${content.events.length})` },
+            { id: 'logins', label: 'Logins / Sessions' },
+            { id: 'push', label: 'Push Prompts' },
+            { id: 'unfamiliar', label: 'External IP (203.0.113.88)' },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFilterType(f.id)}
+              style={{
+                fontSize: '11.5px',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                border: filterType === f.id ? '1px solid #38bdf8' : '1px solid #334155',
+                background: filterType === f.id ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
+                color: filterType === f.id ? '#38bdf8' : '#94a3b8',
+                cursor: 'pointer',
+                fontWeight: filterType === f.id ? 600 : 400,
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Search size={14} style={{ color: '#64748b' }} aria-hidden="true" />
+          <input
+            type="text"
+            placeholder="Search events, IPs, locations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              background: '#020617',
+              border: '1px solid #334155',
+              borderRadius: '4px',
+              color: '#f8fafc',
+              fontSize: '11.5px',
+              padding: '4px 8px',
+              width: '200px',
+            }}
+            aria-label="Filter authentication events"
+          />
+        </div>
+      </div>
+
+      {/* Events List */}
+      <div className={styles.mfaTimelineList} role="feed" aria-label="Chronological Event List">
+        {filteredEvents.length === 0 ? (
+          <div style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '12px' }}>
+            No authentication events match the selected filter.
+          </div>
+        ) : (
+          filteredEvents.map((ev) => {
+            const badgeClass =
+              ev.eventType === 'legitimate_login'
+                ? styles['mfaTypeBadge--legit']
+                : ev.eventType === 'logout'
+                ? styles['mfaTypeBadge--logout']
+                : ev.eventType === 'push_denied'
+                ? styles['mfaTypeBadge--pushDenied']
+                : ev.eventType === 'push_timeout'
+                ? styles['mfaTypeBadge--pushTimeout']
+                : ev.eventType === 'push_dispatched'
+                ? styles['mfaTypeBadge--pushDispatched']
+                : ev.eventType === 'sms_social_engineering'
+                ? styles['mfaTypeBadge--sms']
+                : styles['mfaTypeBadge--alert'];
+
+            return (
+              <div
+                key={ev.id}
+                className={styles.mfaTimelineItem}
+                tabIndex={0}
+                role="article"
+                aria-label={`${ev.timestamp}: ${ev.eventType} for ${ev.serviceName} from ${ev.location}`}
+              >
+                <div className={styles.mfaItemTopRow}>
+                  <div className={styles.mfaItemTimeAndType}>
+                    <span className={styles.mfaItemTimestamp}>{ev.timestamp}</span>
+                    <span className={`${styles.mfaTypeBadge} ${badgeClass}`}>
+                      {ev.eventType.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 600 }}>
+                    {ev.serviceName}
+                  </span>
+                </div>
+
+                <div className={styles.mfaItemDetails}>
+                  {ev.details}
+                </div>
+
+                <div className={styles.mfaItemMetaRow}>
+                  <span><strong>IP:</strong> {ev.sourceIp} ({ev.location})</span>
+                  <span><strong>Device:</strong> {ev.device}</span>
+                  <span><strong>Status:</strong> {ev.status}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
+const PushSimulatorViewer: React.FC<{ content: PushSimulatorContent }> = ({ content }) => {
+  const [simFeedback, setSimFeedback] = useState<'denied' | 'approved' | null>(null);
+
+  return (
+    <div className={styles.pushSimContainer} role="region" aria-label="Simulated Mobile Authenticator Device">
+      <div className={styles.pushPhoneMockup}>
+        {/* Phone Status Bar */}
+        <div className={styles.pushPhoneStatusBar}>
+          <span>Apex Mobile 5G</span>
+          <span style={{ fontWeight: 700 }}>23:47 UTC</span>
+          <span>⚡ 84%</span>
+        </div>
+
+        {/* Device Alert Banner */}
+        <div className={styles.pushBombingAlertBanner}>
+          <Bell size={16} aria-hidden="true" />
+          <span>{content.unsolicitedCount} Unsolicited Push Prompts Detected in 5 Minutes</span>
+        </div>
+
+        {/* Active Push Prompt Card */}
+        <div className={styles.pushCard} role="alert" aria-live="polite">
+          <div className={styles.pushCardHeader}>
+            <span className={styles.pushAppTitle}>
+              <Smartphone size={15} aria-hidden="true" />
+              {content.appName}
+            </span>
+            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {content.activePrompt.timestamp}
+            </span>
+          </div>
+
+          <h5 className={styles.pushPromptQuestion}>
+            Approve sign-in request for {content.activePrompt.service}?
+          </h5>
+
+          <div className={styles.pushDetailsGrid}>
+            <div className={styles.pushDetailRow}>
+              <span className={styles.pushDetailKey}>Target Service:</span>
+              <span className={styles.pushDetailVal}>{content.activePrompt.service}</span>
+            </div>
+            <div className={styles.pushDetailRow}>
+              <span className={styles.pushDetailKey}>Account:</span>
+              <span className={styles.pushDetailVal}>{content.activePrompt.account}</span>
+            </div>
+            <div className={styles.pushDetailRow}>
+              <span className={styles.pushDetailKey}>Location Estimate:</span>
+              <span className={`${styles.pushDetailVal} ${styles['pushDetailVal--warn']}`}>
+                {content.activePrompt.location}
+              </span>
+            </div>
+            <div className={styles.pushDetailRow}>
+              <span className={styles.pushDetailKey}>Requesting IP:</span>
+              <span className={styles.pushDetailVal}>{content.activePrompt.ipAddress}</span>
+            </div>
+            <div className={styles.pushDetailRow}>
+              <span className={styles.pushDetailKey}>Client Device:</span>
+              <span className={styles.pushDetailVal}>{content.activePrompt.deviceInfo}</span>
+            </div>
+          </div>
+
+          {/* Interactive Simulation Buttons */}
+          <div className={styles.pushActionButtons}>
+            <button
+              type="button"
+              className={styles.pushBtnDeny}
+              onClick={() => setSimFeedback('denied')}
+              aria-label="Simulate Denying MFA Prompt"
+            >
+              ❌ Deny &amp; Report
+            </button>
+            <button
+              type="button"
+              className={styles.pushBtnApprove}
+              onClick={() => setSimFeedback('approved')}
+              aria-label="Simulate Approving MFA Prompt"
+            >
+              ✅ Approve
+            </button>
+          </div>
+
+          {simFeedback === 'denied' && (
+            <div className={`${styles.pushActionFeedback} ${styles['pushActionFeedback--denied']}`} role="status">
+              <strong>Simulated Action: Rejected!</strong> In real life, denying unsolicited pushes stops the login attempt and alerts security. However, repeated prompts prove the attacker already holds your password—credential reset and session revocation are mandatory.
+            </div>
+          )}
+
+          {simFeedback === 'approved' && (
+            <div className={`${styles.pushActionFeedback} ${styles['pushActionFeedback--approved']}`} role="alert">
+              <strong>Simulated Action: Compromised!</strong> Approving an unsolicited push completes MFA for the attacker, granting them full access to enterprise sessions and cloud resources!
+            </div>
+          )}
+        </div>
+
+        {/* Incoming SMS Message */}
+        <div className={styles.pushSmsBubble}>
+          <div className={styles.pushSmsHeader}>
+            <span>💬 Incoming SMS • {content.recentSms.sender}</span>
+            <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>{content.recentSms.receivedTime}</span>
+          </div>
+          <p className={styles.pushSmsText}>
+            {content.recentSms.messageText}
+          </p>
+          <span className={styles.pushSmsWarning}>
+            ⚠️ Suspicious message urging push approval. Verify through official internal IT channels before taking action.
+          </span>
+        </div>
+
+        {/* Device Information Footer */}
+        <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>
+            Registered Device Details
+          </div>
+          <div style={{ fontSize: '11px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div><strong>Device:</strong> {content.deviceModel}</div>
+            <div><strong>Recipient Line:</strong> {content.recipientPhone}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -2577,6 +2851,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'file') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isPushSimulator) {
+      return <PushSimulatorViewer content={raw as unknown as PushSimulatorContent} />;
+    }
     if (raw?.isPasswordAudit || Array.isArray(raw?.accounts)) {
       return <PasswordAuditViewer content={raw as unknown as PasswordAuditContent} />;
     }
@@ -2614,6 +2891,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'log') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isAuthTimeline) {
+      return <AuthTimelineViewer content={raw as unknown as AuthTimelineContent} />;
+    }
     if (raw?.isProxyLog || Array.isArray(raw?.entries)) {
       return <ProxyLogViewer content={raw as unknown as ProxyLogContent} />;
     }
@@ -2993,6 +3273,7 @@ export const ChallengePage: React.FC = () => {
     if (ev.type === 'image') return <ImageIcon size={14} aria-hidden="true" />;
     if (ev.type === 'policy' || ev.type === 'file') {
       const raw = ev.content as Record<string, unknown>;
+      if (raw?.isPushSimulator) return <Smartphone size={14} aria-hidden="true" />;
       if (raw?.isBrowserHistory) return <Globe size={14} aria-hidden="true" />;
       if (raw?.isStegoEvidence) return <ImageIcon size={14} aria-hidden="true" />;
       if (raw?.isPasswordAudit) return <KeyRound size={14} aria-hidden="true" />;
@@ -3001,6 +3282,7 @@ export const ChallengePage: React.FC = () => {
     if (ev.type === 'network' || ev.type === 'network-packet') return <Network size={14} aria-hidden="true" />;
     if (ev.type === 'log') {
       const raw = ev.content as Record<string, unknown>;
+      if (raw?.isAuthTimeline) return <Activity size={14} aria-hidden="true" />;
       if (raw?.isProxyLog) return <Network size={14} aria-hidden="true" />;
       if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
         return <ShieldAlert size={14} aria-hidden="true" />;

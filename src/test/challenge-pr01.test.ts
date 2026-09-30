@@ -57,13 +57,13 @@ describe('cc-pr-01 registration & metadata', () => {
     expect(found?.title).toBe('Password Audit');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS while keeping cc-pr-02 and cc-pr-03 coming soon', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS while keeping cc-pr-03 coming soon', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-01')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-pr-02')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-pr-02')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-03')).toBe(false);
   });
 
-  it('preserves all 12 previously built live challenges across all rooms (total 13 live challenges)', () => {
+  it('preserves all previously built live challenges across all rooms (total 14 live challenges)', () => {
     // Phishing Defense
     expect(LIVE_CHALLENGE_IDS.has('cc-ph-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-ph-02')).toBe(true);
@@ -86,16 +86,17 @@ describe('cc-pr-01 registration & metadata', () => {
 
     // Privacy & Account Security
     expect(LIVE_CHALLENGE_IDS.has('cc-pr-01')).toBe(true);
+    expect(LIVE_CHALLENGE_IDS.has('cc-pr-02')).toBe(true);
 
-    expect(LIVE_CHALLENGE_IDS.size).toBe(13);
+    expect(LIVE_CHALLENGE_IDS.size).toBe(14);
   });
 
-  it('verifies the privacy room includes cc-pr-01 in its challenge list', () => {
+  it('verifies the privacy room includes cc-pr-01 and cc-pr-02 in its challenge list', () => {
     const room = getRoom('privacy');
     expect(room).toBeDefined();
     expect(room?.challengeIds).toEqual(['cc-pr-01', 'cc-pr-02', 'cc-pr-03']);
     expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[0])).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[1])).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[1])).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has(room!.challengeIds[2])).toBe(false);
   });
 
@@ -188,7 +189,7 @@ describe('cc-pr-01 evidence ledger consistency', () => {
     const acc5 = auditContent.accounts.find((a) => a.id === 'acc-5')!;
 
     expect(acc5.passwordLength).toBe(33);
-    expect(acc5.passwordDisplay).toBe('correct-horse-battery-staple-77');
+    expect(acc5.passwordDisplay).toBe('crimson-lantern-cobalt-feather-77');
     expect(acc5.breachStatus.isExposed).toBe(false);
     expect(acc5.mfaStatus.enabled).toBe(true);
     expect(acc5.mfaStatus.type).toBe('totp');
@@ -347,8 +348,32 @@ describe('cc-pr-01 End-to-End Scoring & Anti-Guessing', () => {
     expect(scoreResult.passed).toBe(true);
   });
 
-  it('fails pass threshold when marking all accounts unsafe in Step 1 (max 85 without Step 1 perfection)', () => {
-    // Step 1: all true -> 25 pts; Step 2: wrong (0); Step 3: right (30) -> 55 < 70 (Fail)
+  it('penalizes blanket selection of marking all accounts as unsafe (earning 25/40 pts on Step 1, capping overall score at 85)', () => {
+    // Step 1: all true -> 25 pts; Step 2: correct (30); Step 3: correct (30) -> 85 pts (15 pt penalty compared to 100)
+    const responses = buildStepResponses(challengeCC_PR_01.steps, {
+      'step-identify-accounts': {
+        'acc-1': true,
+        'acc-2': true,
+        'acc-3': true,
+        'acc-4': true,
+        'acc-5': true,
+        'acc-6': true,
+        'acc-7': true,
+        'acc-8': true,
+      },
+      'step-prioritize-urgency': 'prio-acc1',
+      'step-hygiene-plan': 'plan-password-manager-mfa',
+    });
+
+    const scoreResult = computeScore(responses, 0, challengeCC_PR_01.passThreshold);
+    expect(scoreResult.earnedScore).toBe(85);
+    expect(scoreResult.finalScore).toBe(85);
+    // Note: 85 passes threshold (70) because Steps 2 and 3 were correct, imposing a 15-pt penalty rather than guaranteeing failure
+    expect(scoreResult.passed).toBe(true);
+  });
+
+  it('fails pass threshold when marking all accounts unsafe if Step 2 is also missed (55 < 70)', () => {
+    // Step 1: all true (25) + Step 2: wrong (0) + Step 3: right (30) = 55 < 70 (Fail)
     const responses = buildStepResponses(challengeCC_PR_01.steps, {
       'step-identify-accounts': {
         'acc-1': true,

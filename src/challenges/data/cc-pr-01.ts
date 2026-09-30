@@ -218,7 +218,7 @@ export const challengeCC_PR_01: Challenge = {
             category: 'internal',
             username: 'jordan.lee',
             roleDescription: 'Standard employee documentation authoring and engineering runbooks',
-            passwordDisplay: 'correct-horse-battery-staple-77',
+            passwordDisplay: 'crimson-lantern-cobalt-feather-77',
             passwordPattern: 'Multi-word random diceware passphrase with numeric suffix (33 characters, high entropy)',
             passwordLength: 33,
             breachStatus: {
@@ -381,7 +381,7 @@ export const challengeCC_PR_01: Challenge = {
         },
         {
           id: 'acc-5',
-          label: 'Internal Knowledge Base & Wiki — Documentation (correct-horse-battery-staple-77, 33-char Passphrase, 0 Breaches, TOTP)',
+          label: 'Internal Knowledge Base & Wiki — Documentation (crimson-lantern-cobalt-feather-77, 33-char Passphrase, 0 Breaches, TOTP)',
         },
         {
           id: 'acc-6',

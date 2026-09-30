@@ -17,6 +17,7 @@ import { challengeCC_DF_01 } from './data/cc-df-01';
 import { challengeCC_DF_02 } from './data/cc-df-02';
 import { challengeCC_DF_03 } from './data/cc-df-03';
 import { challengeCC_PR_01 } from './data/cc-pr-01';
+import { challengeCC_PR_02 } from './data/cc-pr-02';
 
 // ── Challenge registry ────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ export const ALL_CHALLENGES: Challenge[] = [
   challengeCC_DF_02,
   challengeCC_DF_03,
   challengeCC_PR_01,
+  challengeCC_PR_02,
 ];
 
 export const CHALLENGE_MAP: Record<string, Challenge> = Object.fromEntries(
@@ -117,4 +119,5 @@ export const LIVE_CHALLENGE_IDS = new Set([
   'cc-df-02',
   'cc-df-03',
   'cc-pr-01',
+  'cc-pr-02',
 ]);
