@@ -84,7 +84,7 @@ export const challengeCC_DF_02: Challenge = {
   difficulty: 'intermediate',
   title: 'Browser History Reconstruction',
   briefing:
-    'Management received an anonymous tip alleging that Senior Logistics Planner Claire Renaud browsed competitor intelligence sites and exfiltrated proprietary corporate route data via an external file locker during a blackout period. Investigators extracted the workstation browser history (History SQLite table) from ws-ops-14.veridian-logistics.example. Claire disputes the allegations, asserting she never accessed the competitor site and was offline during the alleged off-hours timeframe. Correlate the 25 browser history records against the company’s NTP-synchronized forward proxy logs and workstation power telemetry to identify genuine network visits, detect timestamp tampering or artifact manipulation in the browser database, reconstruct the verified exfiltration sequence, and formulate a defensible forensic conclusion.',
+    'Management received an anonymous tip alleging that Senior Logistics Planner Claire Renaud browsed competitor intelligence sites and exfiltrated proprietary corporate route data via an external file locker during a blackout period. Investigators extracted the workstation browser history (History SQLite table) from ws-ops-14.veridian-logistics.example. Claire disputes the allegations, asserting she never accessed the competitor site and was offline during the alleged off-hours timeframe. Correlate the 25 browser history records against the company’s NTP-synchronized forward proxy logs and workstation power telemetry. Distinguish confirmed facts from provisional hypotheses: identify corroborated network visits, evaluate the SQLite timestamp sequencing anomaly alongside benign possibilities (such as delayed sync or import) and telemetry inconsistencies (sleep state and proxy coverage limits), reconstruct the corroborated upload sequence, and formulate a defensible forensic conclusion.',
 
   // ── Evidence ──────────────────────────────────────────────────────────────
   evidence: [
@@ -104,7 +104,7 @@ export const challengeCC_DF_02: Challenge = {
           title: 'Browser SQLite Artifact Analysis Principles',
           rules: [
             '1. Local Table vs Network Reality: Browser history records URLs stored locally in SQLite. A record indicates an entry was written, but independent network telemetry (proxy/firewall/DNS) is required to confirm external data transmission.',
-            '2. SQLite Auto-Increment Key Inversion: In Chromium history databases, the primary key "id" is an auto-increment integer. Entries with higher IDs but older timestamps indicate manual out-of-sequence row insertion or backdated timestamp editing.',
+            '2. SQLite Auto-Increment Sequencing Anomaly: In Chromium history databases, the primary key "id" is an auto-increment integer assigned upon record creation. Entries with higher IDs but older timestamps represent a sequencing anomaly requiring independent corroboration; possible benign causes include delayed commit of background sessions, profile import/restoration, multi-device cloud synchronization, or local clock adjustments.',
             '3. Transition Types: "typed" denotes direct address bar keystrokes, "link" indicates following a hyperlink, and "auto_subframe" represents secondary resources (tracking beacons, embedded ads, fonts) loaded passively without direct user initiation.',
           ],
         },
@@ -367,7 +367,7 @@ export const challengeCC_DF_02: Challenge = {
             transition: 'typed',
             hidden: false,
             notes:
-              'Disputed entry alleging off-hours espionage. Critical anomaly: SQLite rowid=23 but timestamp predates rowid=1!',
+              'Disputed entry alleging off-hours espionage. Sequencing anomaly: SQLite rowid=23 exhibits a timestamp earlier than rowid=1, requiring corroboration and assessment of benign causes alongside telemetry.',
           },
           {
             id: 24,
@@ -380,7 +380,7 @@ export const challengeCC_DF_02: Challenge = {
             transition: 'link',
             hidden: false,
             notes:
-              'Disputed entry alleging off-hours paste leak. Rowid=24 predates rowid=1 daytime records.',
+              'Disputed entry alleging off-hours paste leak. Sequencing anomaly: rowid=24 predates rowid=1 daytime records, requiring multi-source corroboration.',
           },
           {
             id: 25,
@@ -393,7 +393,7 @@ export const challengeCC_DF_02: Challenge = {
             transition: 'typed',
             hidden: false,
             notes:
-              'Disputed entry alleging dark web data brokerage. Rowid=25 predates rowid=1 daytime records.',
+              'Disputed entry alleging dark web data brokerage. Sequencing anomaly: rowid=25 predates rowid=1 daytime records, requiring multi-source corroboration.',
           },
         ],
       },
@@ -414,7 +414,7 @@ export const challengeCC_DF_02: Challenge = {
           rules: [
             '1. Independent Synchronization: Proxy records are timestamped by the central gateway server synced via stratum-1 NTP, completely independent of local workstation system clocks.',
             '2. Payload Volumetrics: Payloads with high bytesSent (e.g. multi-megabyte POST requests) indicate significant outbound file uploads rather than routine metadata exchanges.',
-            '3. Off-Hours Egress Coverage: The forward proxy captures all outbound HTTP/HTTPS traffic. Zero log records exist for client 198.51.100.42 between 2026-10-01 22:00:00 and 2026-10-02 08:29:59 UTC.',
+            '3. Telemetry Coverage & Evidentiary Scope: The forward proxy captures standard corporate subnet HTTP/HTTPS egress. Zero log records exist for client 198.51.100.42 between 2026-10-01 22:00:00 and 2026-10-02 08:29:59 UTC, leaving the alleged off-hours browsing uncorroborated by proxy telemetry. Examiners must recognize logging limitations: absence of records in a single log source is not universal proof that an event never occurred via alternative network paths.',
           ],
         },
         entries: [
@@ -661,7 +661,7 @@ export const challengeCC_DF_02: Challenge = {
             durationMs: 3450,
             category: 'Uncategorized / External Cloud Storage',
             notes:
-              'High-volume outbound payload exfiltration; 18.43 MB transmitted via HTTP multipart POST',
+              'High-volume outbound payload upload; 18.43 MB transmitted via HTTP multipart POST (corroborated outbound upload; confidential-data exfiltration remains a provisional hypothesis pending independent payload verification)',
           },
           {
             id: 'px-18',
@@ -749,9 +749,9 @@ export const challengeCC_DF_02: Challenge = {
         classification: 'INTERNAL FORENSIC STANDARD',
         rules: [
           'Rule 1 (Multi-Source Corroboration Requirement): An entry in a browser history SQLite table demonstrates only that text was committed to the local database file. Examiners must never treat a browser record in isolation as conclusive proof of web navigation. Corroboration against independent network records (forward proxy logs, stateful perimeter firewalls, or DNS resolver queries) is mandatory.',
-          'Rule 2 (SQLite Auto-Increment & Timestamp Inversion): In Chromium-based history databases, urls.id and visits.id are sequentially assigned auto-incrementing integers. When records bearing higher primary keys exhibit timestamps earlier than lower primary keys, this establishes manual out-of-order record insertion, database modification, or timestamp backdating.',
+          'Rule 2 (SQLite Auto-Increment & Timestamp Sequencing Anomaly): In Chromium-based history databases, urls.id and visits.id are sequentially assigned auto-incrementing integers upon row insertion. When records bearing higher primary keys exhibit timestamps earlier than lower primary keys, this establishes a sequencing anomaly requiring independent corroboration. Rather than treating this pattern as standalone proof of manual insertion, tampering, or backdating, examiners must evaluate alternative benign explanations including delayed recording, profile import, multi-device synchronization, or system clock adjustments.',
           'Rule 3 (Transition Types & Passive Web Assets): Evaluators must check the transition flag before attributing user intent. Direct user navigation is marked "typed" or "generated". In contrast, entries with "auto_subframe" or "auto_toplevel" represent passive background assets (such as tracking pixels, embedded advertisements, or iframes) loaded automatically by external websites without user action.',
-          'Rule 4 (Host Power Telemetry Correlation): Hardware power state telemetry (e.g. Windows Kernel-Power Event ID 42 Sleep and Event ID 1 Resume) defines strict physical constraints. User-initiated web browsing cannot take place while a workstation is in ACPI S3 (sleep) or S5 (shutdown) power states.',
+          'Rule 4 (Host Telemetry & Coverage Boundaries): Hardware power state telemetry (e.g. Windows Kernel-Power Event ID 42 Sleep and Event ID 1 Resume) documents physical host state. Standard interactive local browsing is inconsistent with ACPI S3 sleep. However, examiners must document logging coverage and limitations: sleep-state conflicts and missing proxy records indicate the alleged activity is uncorroborated by and inconsistent with available telemetry, but absence of evidence in specific logs cannot be asserted as universal negative proof across all possible channels.',
           'Rule 5 (Evidence Preservation & Journal Files): When acquiring SQLite database files, examiners must capture both the primary database container and its accompanying Write-Ahead Log (-wal) and Shared Memory (-shm) files. All forensic analyses must be conducted exclusively on verified working copies.',
           'Workstation ws-ops-14 Power Event Log: Event ID 42 (Kernel-Power) recorded on 2026-10-01 17:15:00 UTC (System entering ACPI S3 sleep state; Reason: User idle). Event ID 1 (Kernel-General / Power-Troubleshooter) recorded on 2026-10-02 08:22:15 UTC (System resumed from sleep; Sleep duration: 54,435 seconds). Zero user logins or interactive sessions occurred between these timestamps.',
         ],
@@ -810,13 +810,13 @@ export const challengeCC_DF_02: Challenge = {
     {
       id: 'step-tampering-indicators',
       prompt:
-        'What forensic facts prove that the disputed off-hours entries on 2026-10-01 (global-competitor-freight.example.com and dark-broker.example.com) did not occur as recorded in the browser history?',
+        'Which forensic assessment accurately reflects the disputed off-hours entries on 2026-10-01 (global-competitor-freight.example.com and dark-broker.example.com) across the available host and network telemetry?',
       interaction: 'single-choice',
       items: [
         {
           id: 'anom-id-telemetry',
           label:
-            'The off-hours entries have higher SQLite row IDs (#23–#25) than the next day’s daytime entries (#1–#22), while forward proxy logs show zero egress traffic and system event logs prove ws-ops-14 was in S3 ACPI sleep.',
+            'The entries show an SQLite ID sequencing anomaly (#23–#25 older than #1–#22) requiring corroboration rather than proving tampering, while the browsing is uncorroborated by proxy logs and inconsistent with host telemetry showing ws-ops-14 in S3 ACPI sleep (subject to log coverage limitations).',
         },
         {
           id: 'anom-url-protocol',
@@ -843,7 +843,7 @@ export const challengeCC_DF_02: Challenge = {
     {
       id: 'step-exfiltration-sequence',
       prompt:
-        'Reconstruct the confirmed exfiltration timeline in chronological order by arranging the 4 verified events from earliest to latest.',
+        'Reconstruct the sequence of verified events surrounding the suspected data staging and corroborated upload in chronological order from earliest to latest.',
       interaction: 'ordering',
       items: [
         {
@@ -859,7 +859,7 @@ export const challengeCC_DF_02: Challenge = {
         {
           id: 'seq-upload',
           label:
-            '14:22 UTC — Upload 18.4 MB payload to DropVault (POST https://drop-vault.example.net/upload)',
+            '14:22 UTC — Upload 18.4 MB payload to DropVault (POST https://drop-vault.example.net/upload) — Corroborated upload (confidential exfiltration remains provisional pending payload identification)',
         },
         {
           id: 'seq-confirm',
@@ -884,12 +884,12 @@ export const challengeCC_DF_02: Challenge = {
         {
           id: 'pres-defensible',
           label:
-            'Report confirmed exfiltration to DropVault corroborated by proxy egress logs, document the SQLite ID inversion and lack of network traffic as evidence of backdating/tampering on the off-hours records without unverified speculation, and preserve History along with History-wal and History-shm journal files.',
+            'Report the 18.4 MB DropVault POST as a corroborated outbound upload while keeping confidential-data exfiltration provisional pending payload identification, document off-hours entries as uncorroborated by proxy telemetry, inconsistent with host sleep state, and an anomaly requiring corroboration, and preserve History alongside History-wal and History-shm files.',
         },
         {
           id: 'pres-blame-competitor',
           label:
-            'Formally charge Claire with corporate espionage to competitor freight firms because any URL present in the local History database must be treated as absolute legal proof.',
+            'Formally charge Claire with confirmed confidential route exfiltration and intentional database tampering, claiming that the SQLite ID inversion and absence from proxy logs definitively prove malicious backdating.',
         },
         {
           id: 'pres-delete-anomalies',
@@ -911,8 +911,8 @@ export const challengeCC_DF_02: Challenge = {
   // ── Hints ─────────────────────────────────────────────────────────────────
   hints: [
     'Cross-reference each disputed browser entry with the forward proxy logs (proxy01-access.log). Remember the core forensic rule: an entry in browser history alone only proves text exists in a local database file, not that data was actually transmitted across the network.',
-    'Examine the SQLite primary key id values for the off-hours entries (#23, #24, #25). Why would records dated October 1st have higher auto-increment keys than daytime records from October 2nd? Check workstation event logs for host power state S3 sleep.',
-    'Distinguish deliberate navigation (typed transition, manual search query) from passive background scripts (auto_subframe). The real exfiltration sequence starts with internal spreadsheet download at 13:42 UTC and culminates in the 18.4 MB POST upload to DropVault at 14:22 UTC.',
+    'Examine the SQLite primary key id values for the off-hours entries (#23, #24, #25). Higher auto-increment keys with older timestamps indicate an anomaly requiring corroboration; consider possible benign causes (delayed sync/import) alongside telemetry showing ws-ops-14 in S3 sleep and missing from proxy logs.',
+    'Distinguish deliberate navigation from passive background scripts (auto_subframe). The corroborated sequence connects the 13:42 UTC spreadsheet export, search queries, and 18.4 MB DropVault upload; keep content exfiltration provisional unless independent evidence verifies the uploaded payload.',
   ],
 
   // ── Skills ────────────────────────────────────────────────────────────────
@@ -929,10 +929,10 @@ export const challengeCC_DF_02: Challenge = {
 
   // ── Explanations ─────────────────────────────────────────────────────────
   successExplanation:
-    'Superb digital forensics investigation! You accurately correlated the local browser history database against independent network proxy logs, spotted the critical SQLite auto-increment anomaly and power state contradiction that proved timestamp tampering, reconstructed the genuine exfiltration timeline, and adhered to forensically sound reporting and preservation standards.\n\nInvestigation Breakdown:\n1. Cross-Source Corroboration:\n- Corroborating with independent proxy logs proved that the alleged off-hours visits to `global-competitor-freight.example.com` and `dark-broker.example.com` at 23:45 UTC on 2026-10-01 never generated any network traffic.\n- Conversely, the visits to `search.example.org` (14:10 UTC) and `drop-vault.example.net` (14:22 UTC with an 18.4 MB POST upload) were fully corroborated by authenticated forward proxy logs matching Claire\'s IP (198.51.100.42).\n\n2. Detecting SQLite Auto-Increment & Power State Tampering:\n- In SQLite, the `id` column is an auto-increment integer key. Entries 23–25 have timestamps earlier than entries 1–22, proving they were inserted out-of-order after October 2nd and backdated.\n- Windows System Event logs corroborated this: `ws-ops-14` was in S3 ACPI sleep from 17:15 UTC on Oct 1 until 08:22 UTC on Oct 2, making local user browsing physically impossible during the alleged 23:45 timeframe.\n\n3. Passive Assets vs Deliberate Navigation:\n- The entry for `analytics.ad-tracker.example.com` carried an `auto_subframe` transition. It was an automated tracking pixel loaded by an external website, not deliberate user browsing.\n\n4. Forensic Integrity & Reporting:\n- Forensic science demands objective reporting: confirm what is corroborated by independent evidence, note anomalies without unfounded speculation, and preserve SQLite databases with their `-wal` and `-shm` transaction journals intact.',
+    'Outstanding digital forensics investigation! You distinguished confirmed facts from provisional hypotheses: you correlated local browser history against independent proxy telemetry, recognized the SQLite auto-increment sequencing anomaly while evaluating telemetry inconsistencies and coverage limits, reconstructed the corroborated upload timeline, and adhered to defensible evidence standards.\n\nInvestigation Breakdown:\n1. Cross-Source Corroboration & Logging Limits:\n- Corroborating with independent proxy logs demonstrated that the alleged off-hours visits to global-competitor-freight.example.com and dark-broker.example.com at 23:45 UTC on 2026-10-01 have zero proxy records. While absence from a single log is not universal proof that an event never occurred, it leaves the alleged browsing uncorroborated by network telemetry.\n- Conversely, the visits to search.example.org (14:10 UTC) and drop-vault.example.net (14:22 UTC with an 18.4 MB POST upload) were fully corroborated by authenticated forward proxy logs matching Claire\'s IP (198.51.100.42).\n\n2. SQLite ID Sequencing Anomaly & Telemetry Inconsistency:\n- Entries 23–25 have higher auto-increment IDs with earlier timestamps than entries 1–22. Rather than jumping to an assumption of tampering, sound forensics treats this as an anomaly requiring corroboration, acknowledging potential benign causes (delayed sync, profile import, or clock adjustments).\n- Workstation power telemetry provides crucial context: ws-ops-14 was recorded in S3 ACPI sleep from 17:15 UTC on Oct 1 until 08:22 UTC on Oct 2, making local interactive browsing inconsistent with available host state.\n\n3. Corroborated Upload vs Provisional Exfiltration:\n- The 18.4 MB POST request to DropVault at 14:22 UTC is a corroborated upload. While circumstantial timing (following the 13:42 UTC export of route-valuation-confidential.xlsx) strongly supports the exfiltration hypothesis, the finding remains provisional until independent evidence directly inspects or confirms the uploaded payload content.\n\n4. Passive Assets vs User Navigation:\n- The entry for analytics.ad-tracker.example.com had an auto_subframe transition, reflecting an automated third-party tracking asset loaded passively rather than intentional user browsing.\n\n5. Forensic Integrity & Evidence Preservation:\n- Defensible reporting notes confirmed facts, articulates hypotheses with appropriate confidence levels, and preserves SQLite databases along with their -wal and -shm journal files.',
 
   failureExplanation:
-    'In digital forensics, a browser history record or timestamp in isolation is NEVER definitive proof of web navigation.\n\nKey Principles to Remember:\n- Local vs Network Reality: Browser history tables can be forged, edited, or backdated. Always verify outbound connections against synchronized proxy, firewall, or DNS resolver logs.\n- SQLite Auto-Increment Sequencing: When higher row IDs have older timestamps than lower row IDs, the database has been modified out of chronological order.\n- Host Telemetry Correlation: Operating system event logs (such as ACPI sleep S3 events) provide vital hardware boundaries when evaluating alleged user activity.\n- Transition Types: Distinguish user-typed visits from passive iframe subframes (auto_subframe) and background asset loads.\n- Preservation: Never delete or alter suspect evidence, and always preserve WAL/SHM journal files alongside SQLite databases.',
+    'In digital forensics, a local browser history entry or isolated timestamp is NEVER definitive proof of external web activity, nor does an anomaly alone prove malice.\n\nKey Principles to Remember:\n- Confirmed Facts vs Hypotheses (Local vs Network Reality): Distinguish what is directly verified (e.g. corroborated network uploads) from provisional hypotheses (e.g. attributing specific file contents without payload inspection).\n- Host Telemetry Correlation & Limits: Absence from proxy logs and sleep state conflicts show that alleged browsing is uncorroborated and inconsistent with telemetry, but examiners must state coverage limits—absence from one log is not universal negative proof.\n- SQLite Auto-Increment Sequencing: Higher row IDs with earlier timestamps indicate an anomaly requiring corroboration; always consider benign explanations like delayed recording, synchronization, or import before concluding tampering.\n- Transition Types: Distinguish user-typed visits from passive iframe subframes (auto_subframe).\n- Preservation: Always preserve WAL (-wal) and SHM (-shm) journal files alongside SQLite databases on verified working copies.',
 
   shuffleItems: false,
 };

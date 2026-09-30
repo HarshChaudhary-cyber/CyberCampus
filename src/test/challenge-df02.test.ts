@@ -463,7 +463,7 @@ describe('cc-df-02 educational explanations & answer formatting', () => {
     expect(disp1).toContain('https://search.example.org/search?q=free+anonymous+file+drop');
 
     const disp2 = getCorrectAnswerDisplay(stepTampering);
-    expect(disp2).toContain('higher SQLite row IDs (#23–#25)');
+    expect(disp2).toContain('SQLite ID sequencing anomaly');
     expect(disp2).toContain('S3 ACPI sleep');
 
     const disp3 = getCorrectAnswerDisplay(stepSequence);
@@ -473,8 +473,107 @@ describe('cc-df-02 educational explanations & answer formatting', () => {
     expect(disp3).toContain('4. 14:24 UTC');
 
     const disp4 = getCorrectAnswerDisplay(stepReporting);
-    expect(disp4).toContain('Report confirmed exfiltration to DropVault');
+    expect(disp4).toContain('Report the 18.4 MB DropVault POST as a corroborated outbound upload');
     expect(disp4).toContain('History-wal');
+  });
+});
+
+// ── Task 6B.1 Forensic Conclusion Corrections ─────────────────────────────────
+
+describe('cc-df-02 Task 6B.1 forensic conclusions & telemetry nuance', () => {
+  it('treats SQLite auto-increment ID inversion as an anomaly with benign explanations (delayed recording, sync, import, clock drift)', () => {
+    const bhEv = challengeCC_DF_02.evidence.find((e) => e.id === 'ev-browser-history')!;
+    const bhContent = bhEv.content as unknown as BrowserHistoryContent;
+    const rule2 = bhContent.guidanceNote!.rules.find((r) => r.includes('SQLite Auto-Increment'));
+
+    expect(rule2).toBeDefined();
+    expect(rule2).toContain('sequencing anomaly');
+    expect(rule2).toContain('requiring independent corroboration');
+    expect(rule2).toContain('delayed commit');
+    expect(rule2).toContain('profile import');
+    expect(rule2).toContain('synchronization');
+
+    // SOP rule 2
+    const sopEv = challengeCC_DF_02.evidence.find((e) => e.id === 'ev-telemetry-sop')!;
+    const sopContent = sopEv.content as unknown as WorkstationTelemetryContent;
+    const sopRule2 = sopContent.rules.find((r) => r.includes('Rule 2'))!;
+
+    expect(sopRule2).toContain('sequencing anomaly');
+    expect(sopRule2).toContain('requiring independent corroboration');
+    expect(sopRule2).toContain('benign explanations');
+    expect(sopRule2).toContain('delayed recording');
+    expect(sopRule2).toContain('profile import');
+
+    // Step 2 prompt & option
+    expect(stepTampering.prompt).toContain('Which forensic assessment accurately reflects');
+    const correctStep2 = stepTampering.items.find((i) => i.id === 'anom-id-telemetry')!;
+    expect(correctStep2.label).toContain('SQLite ID sequencing anomaly');
+    expect(correctStep2.label).toContain('requiring corroboration rather than proving tampering');
+  });
+
+  it('treats sleep state and missing proxy records as uncorroborated browsing, explicitly acknowledging log coverage limitations', () => {
+    const pxEv = challengeCC_DF_02.evidence.find((e) => e.id === 'ev-proxy-logs')!;
+    const pxContent = pxEv.content as unknown as ProxyLogContent;
+    const pxRule3 = pxContent.guidanceNote!.rules.find((r) => r.includes('Telemetry Coverage'));
+
+    expect(pxRule3).toBeDefined();
+    expect(pxRule3).toContain('uncorroborated by proxy telemetry');
+    expect(pxRule3).toContain('absence of records in a single log source is not universal proof');
+
+    // SOP rule 4
+    const sopEv = challengeCC_DF_02.evidence.find((e) => e.id === 'ev-telemetry-sop')!;
+    const sopContent = sopEv.content as unknown as WorkstationTelemetryContent;
+    const sopRule4 = sopContent.rules.find((r) => r.includes('Rule 4'))!;
+
+    expect(sopRule4).toContain('inconsistent with ACPI S3 sleep');
+    expect(sopRule4).toContain('document logging coverage and limitations');
+    expect(sopRule4).toContain('cannot be asserted as universal negative proof');
+
+    // Step 2 option notes coverage limitations
+    const correctStep2 = stepTampering.items.find((i) => i.id === 'anom-id-telemetry')!;
+    expect(correctStep2.label).toContain('subject to log coverage limitations');
+    expect(correctStep2.label).toContain('uncorroborated by proxy logs and inconsistent with host telemetry');
+  });
+
+  it('describes 18.4 MB outbound POST as a corroborated upload, keeping confidential-data exfiltration provisional pending payload identification', () => {
+    // Proxy entry px-17 notes
+    const pxEv = challengeCC_DF_02.evidence.find((e) => e.id === 'ev-proxy-logs')!;
+    const pxContent = pxEv.content as unknown as ProxyLogContent;
+    const px17 = pxContent.entries.find((e) => e.id === 'px-17')!;
+
+    expect(px17.notes).toContain('corroborated outbound upload');
+    expect(px17.notes).toContain('provisional hypothesis pending independent payload verification');
+
+    // Step 3 seq-upload label
+    const seqUpload = stepSequence.items.find((i) => i.id === 'seq-upload')!;
+    expect(seqUpload.label).toContain('Corroborated upload');
+    expect(seqUpload.label).toContain('confidential exfiltration remains provisional pending payload identification');
+
+    // Step 4 pres-defensible label
+    const presDef = stepReporting.items.find((i) => i.id === 'pres-defensible')!;
+    expect(presDef.label).toContain('corroborated outbound upload');
+    expect(presDef.label).toContain('keeping confidential-data exfiltration provisional pending payload identification');
+
+    // Step 4 distractor pres-blame-competitor
+    const presBlame = stepReporting.items.find((i) => i.id === 'pres-blame-competitor')!;
+    expect(presBlame.label).toContain('definitively prove malicious backdating');
+  });
+
+  it('asks learners to distinguish confirmed facts from provisional hypotheses across prompt, hints, and explanations', () => {
+    // Briefing
+    expect(challengeCC_DF_02.briefing).toContain('Distinguish confirmed facts from provisional hypotheses');
+
+    // Hints
+    expect(challengeCC_DF_02.hints[1]).toContain('anomaly requiring corroboration; consider possible benign causes');
+    expect(challengeCC_DF_02.hints[2]).toContain('keep content exfiltration provisional unless independent evidence verifies');
+
+    // Explanations
+    expect(challengeCC_DF_02.successExplanation).toContain('distinguished confirmed facts from provisional hypotheses');
+    expect(challengeCC_DF_02.successExplanation).toContain('absence from a single log is not universal proof');
+    expect(challengeCC_DF_02.successExplanation).toContain('provisional until independent evidence directly inspects or confirms the uploaded payload content');
+
+    expect(challengeCC_DF_02.failureExplanation).toContain('Confirmed Facts vs Hypotheses');
+    expect(challengeCC_DF_02.failureExplanation).toContain('absence from one log is not universal negative proof');
   });
 });
 
