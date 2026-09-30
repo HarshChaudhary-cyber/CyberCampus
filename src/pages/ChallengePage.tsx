@@ -4,7 +4,7 @@ import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
-  HardDrive, File, Trash2, Globe,
+  HardDrive, File, Trash2, Globe, Image as ImageIcon, CheckCircle2, Copy, Check,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -15,6 +15,8 @@ import { NotFoundPage } from './NotFoundPage';
 import type { EvidenceItem, Step, StepResponse } from '../types';
 import type { FileSystemContent } from '../challenges/data/cc-df-01';
 import type { BrowserHistoryContent, ProxyLogContent } from '../challenges/data/cc-df-02';
+import type { StegoEvidenceContent } from '../challenges/data/cc-df-03';
+import { extractLSBFromPngBytes, type StegoExtractionResult } from '../challenges/data/stego-fixtures';
 import styles from './ChallengePage.module.css';
 
 // ── Evidence Viewers ──────────────────────────────────────────────────────────
@@ -2064,6 +2066,262 @@ const ProxyLogViewer: React.FC<{ content: ProxyLogContent }> = ({ content }) => 
   );
 };
 
+const SteganographyViewer: React.FC<{ content: StegoEvidenceContent }> = ({ content }) => {
+  const exhibits = useMemo(() => content.exhibits || [], [content.exhibits]);
+  const [selectedExhibitId, setSelectedExhibitId] = useState<string>(
+    exhibits.length > 0 ? exhibits[0].id : ''
+  );
+  const [extractionMode, setExtractionMode] = useState<'rgb-lsb' | 'msb' | 'alpha-lsb'>('rgb-lsb');
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+  const [resultsByExhibit, setResultsByExhibit] = useState<Record<string, StegoExtractionResult>>({});
+  const [copiedPayload, setCopiedPayload] = useState<boolean>(false);
+
+  const selectedExhibit = useMemo(() => {
+    return exhibits.find((e) => e.id === selectedExhibitId) || exhibits[0] || null;
+  }, [exhibits, selectedExhibitId]);
+
+  const activeResultKey = selectedExhibit ? `${selectedExhibit.id}_${extractionMode}` : '';
+  const currentResult = resultsByExhibit[activeResultKey] || null;
+
+  const handleRunExtraction = useCallback(() => {
+    if (!selectedExhibit) return;
+    setIsExtracting(true);
+    setTimeout(() => {
+      const res = extractLSBFromPngBytes(selectedExhibit.rawPngBytes, extractionMode);
+      setResultsByExhibit((prev) => ({
+        ...prev,
+        [`${selectedExhibit.id}_${extractionMode}`]: res,
+      }));
+      setIsExtracting(false);
+    }, 150);
+  }, [selectedExhibit, extractionMode]);
+
+  const handleCopyPayload = useCallback(() => {
+    if (currentResult?.payloadText) {
+      navigator.clipboard?.writeText(currentResult.payloadText).catch(() => {});
+      setCopiedPayload(true);
+      setTimeout(() => setCopiedPayload(false), 2000);
+    }
+  }, [currentResult]);
+
+  return (
+    <div className={styles.stegoWorkbench} role="region" aria-label="Steganography Evidence & Extraction Workbench">
+      <div className={styles.stegoHeader}>
+        <div className={styles.stegoHeaderLeft}>
+          <ImageIcon size={22} className={styles.stegoIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.stegoTitle}>Forensic Steganography Examination Workbench</h3>
+            <p className={styles.stegoMeta}>
+              <span>Case: <strong>{content.caseReference}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Exhibits: <strong>{exhibits.length} Lossless PNGs</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Target Domain: <strong>Spatial Pixel LSB</strong></span>
+            </p>
+          </div>
+        </div>
+        <div className={styles.stegoCaseBadge}>{content.caseReference}</div>
+      </div>
+
+      {content.guidanceNote && (
+        <div className={styles.stegoGuidanceCard}>
+          <div className={styles.stegoGuidanceHeader}>
+            <FileText size={15} aria-hidden="true" />
+            <span>{content.guidanceNote.title}</span>
+          </div>
+          <ul className={styles.stegoGuidanceList}>
+            {content.guidanceNote.rules.map((rule, idx) => (
+              <li key={idx}>{rule}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Exhibit Cards */}
+      <div className={styles.stegoExhibitGrid} role="tablist" aria-label="Evidence Image Exhibits">
+        {exhibits.map((ex) => {
+          const isSelected = ex.id === selectedExhibit?.id;
+          const lsbResult = resultsByExhibit[`${ex.id}_rgb-lsb`];
+          return (
+            <button
+              key={ex.id}
+              role="tab"
+              aria-selected={isSelected}
+              className={`${styles.stegoCard} ${isSelected ? styles.stegoCardActive : ''}`}
+              onClick={() => setSelectedExhibitId(ex.id)}
+            >
+              <img
+                src={ex.dataUrl}
+                alt={ex.filename}
+                className={styles.stegoThumb}
+                width={48}
+                height={48}
+              />
+              <div className={styles.stegoCardInfo}>
+                <span className={styles.stegoCardFilename}>{ex.filename}</span>
+                <span className={styles.stegoCardMeta}>
+                  {ex.dimensions.width}×{ex.dimensions.height} px • {(ex.fileSizeBytes / 1024).toFixed(1)} KB
+                </span>
+                {lsbResult && (
+                  <span
+                    className={`${styles.stegoCardBadge} ${
+                      lsbResult.valid ? styles['stegoCardBadge--verified'] : styles['stegoCardBadge--none']
+                    }`}
+                  >
+                    {lsbResult.valid ? '✓ Payload Verified' : 'No Payload'}
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active Exhibit Details & Extraction Tool */}
+      {selectedExhibit && (
+        <div className={styles.stegoDetailSection}>
+          {/* Left: Inspector */}
+          <div className={styles.stegoInspectorPanel}>
+            <div className={styles.stegoInspectorHeader}>
+              <h4 className={styles.stegoInspectorTitle}>Exhibit Inspector: {selectedExhibit.filename}</h4>
+              <span className={styles.bhCaseBadge}>PNG 8-bit RGBA</span>
+            </div>
+
+            <div className={styles.stegoZoomContainer}>
+              <img
+                src={selectedExhibit.dataUrl}
+                alt={`Zoomed preview of ${selectedExhibit.filename}`}
+                className={styles.stegoZoomImage}
+                width={144}
+                height={144}
+              />
+              <div className={styles.stegoZoomLegend}>
+                <span>Preview: <strong>3× Pixel Zoom</strong></span>
+                <span>Dimensions: <strong>{selectedExhibit.dimensions.width} × {selectedExhibit.dimensions.height}</strong></span>
+                <span>Total Pixels: <strong>{selectedExhibit.dimensions.width * selectedExhibit.dimensions.height}</strong></span>
+                <span>LSB Capacity: <strong>{selectedExhibit.dimensions.width * selectedExhibit.dimensions.height * 3} bits</strong></span>
+              </div>
+            </div>
+
+            <div className={styles.stegoPropList}>
+              <div className={styles.stegoPropRow}>
+                <span className={styles.stegoPropKey}>Filename:</span>
+                <span className={styles.stegoPropVal}>{selectedExhibit.filename}</span>
+              </div>
+              <div className={styles.stegoPropRow}>
+                <span className={styles.stegoPropKey}>File Size:</span>
+                <span className={styles.stegoPropVal}>{selectedExhibit.fileSizeBytes.toLocaleString()} bytes</span>
+              </div>
+              <div className={styles.stegoPropRow}>
+                <span className={styles.stegoPropKey}>SHA-256 Hash:</span>
+                <span className={styles.stegoPropVal}>{selectedExhibit.sha256}</span>
+              </div>
+              <div className={styles.stegoPropRow}>
+                <span className={styles.stegoPropKey}>Acquisition Provenance:</span>
+                <span className={styles.stegoPropVal}>{selectedExhibit.acquisitionSource}</span>
+              </div>
+              <div className={styles.stegoPropRow}>
+                <span className={styles.stegoPropKey}>Case Notes:</span>
+                <span className={styles.stegoPropVal}>{selectedExhibit.notes}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Extraction Tool */}
+          <div className={styles.stegoToolPanel}>
+            <div className={styles.stegoInspectorHeader}>
+              <h4 className={styles.stegoInspectorTitle}>Forensic Bitplane Extraction Tool</h4>
+              <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>SOP FOR-204</span>
+            </div>
+
+            <div className={styles.stegoToolControls}>
+              <div className={styles.stegoModeSelector}>
+                <label htmlFor="stego-mode-select" className={styles.stegoModeLabel}>
+                  Extraction Method / Target Plane:
+                </label>
+                <select
+                  id="stego-mode-select"
+                  className={styles.stegoSelect}
+                  value={extractionMode}
+                  onChange={(e) => setExtractionMode(e.target.value as 'rgb-lsb' | 'msb' | 'alpha-lsb')}
+                >
+                  <option value="rgb-lsb">Sequential RGB Least-Significant-Bit (LSB) — Standard</option>
+                  <option value="msb">Bitplane 7 / MSB (High-Order Plane)</option>
+                  <option value="alpha-lsb">Alpha Channel LSB (Transparency Plane)</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                className={styles.stegoExtractBtn}
+                onClick={handleRunExtraction}
+                disabled={isExtracting}
+                aria-label={`Run forensic extraction on ${selectedExhibit.filename}`}
+              >
+                {isExtracting ? 'Analyzing Raster Bitplanes...' : `Run Forensic Extraction (${selectedExhibit.filename})`}
+              </button>
+            </div>
+
+            {/* Results Console */}
+            {currentResult ? (
+              <div
+                className={`${styles.stegoResultCard} ${
+                  currentResult.valid ? styles['stegoResultCard--success'] : styles['stegoResultCard--failure']
+                }`}
+              >
+                <div
+                  className={`${styles.stegoResultStatus} ${
+                    currentResult.valid ? styles['stegoResultStatus--success'] : styles['stegoResultStatus--failure']
+                  }`}
+                >
+                  {currentResult.valid ? (
+                    <>
+                      <CheckCircle2 size={16} aria-hidden="true" />
+                      <span>Payload Verified ({currentResult.bytesExtracted} bytes)</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={16} aria-hidden="true" />
+                      <span>No Valid Payload Detected</span>
+                    </>
+                  )}
+                </div>
+
+                <p className={styles.stegoDiagnostics}>{currentResult.diagnostics}</p>
+
+                {currentResult.payloadText && (
+                  <div className={styles.stegoPayloadBox}>
+                    <div className={styles.stegoPayloadHeader}>
+                      <span>Decoded Plaintext Payload:</span>
+                      <button
+                        type="button"
+                        className={styles.stegoCopyBtn}
+                        onClick={handleCopyPayload}
+                        aria-label="Copy recovered payload to clipboard"
+                      >
+                        {copiedPayload ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+                        {copiedPayload ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <pre className={styles.stegoPayloadText}>{currentResult.payloadText}</pre>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={styles.bhEmptyInspector} style={{ minHeight: '140px' }}>
+                <p>
+                  Select an extraction method and click <strong>Run Forensic Extraction</strong> to read and decode
+                  the raw raster scanlines of <code>{selectedExhibit.filename}</code>.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -2075,8 +2333,17 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
     }
     return <EmailViewer content={item.content as unknown as EmailContent} />;
   }
+  if (item.type === 'image') {
+    const raw = item.content as Record<string, unknown>;
+    if (raw?.isStegoEvidence || Array.isArray(raw?.exhibits)) {
+      return <SteganographyViewer content={raw as unknown as StegoEvidenceContent} />;
+    }
+  }
   if (item.type === 'file') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isStegoEvidence || Array.isArray(raw?.exhibits)) {
+      return <SteganographyViewer content={raw as unknown as StegoEvidenceContent} />;
+    }
     if (raw?.isBrowserHistory || Array.isArray(raw?.records)) {
       return <BrowserHistoryViewer content={raw as unknown as BrowserHistoryContent} />;
     }
@@ -2484,9 +2751,11 @@ export const ChallengePage: React.FC = () => {
       }
       return <Mail size={14} aria-hidden="true" />;
     }
+    if (ev.type === 'image') return <ImageIcon size={14} aria-hidden="true" />;
     if (ev.type === 'policy' || ev.type === 'file') {
       const raw = ev.content as Record<string, unknown>;
       if (raw?.isBrowserHistory) return <Globe size={14} aria-hidden="true" />;
+      if (raw?.isStegoEvidence) return <ImageIcon size={14} aria-hidden="true" />;
       return <Building2 size={14} aria-hidden="true" />;
     }
     if (ev.type === 'network' || ev.type === 'network-packet') return <Network size={14} aria-hidden="true" />;

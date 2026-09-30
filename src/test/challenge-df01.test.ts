@@ -52,10 +52,10 @@ describe('cc-df-01 registration & metadata', () => {
     expect(found?.title).toBe('Deleted File Recovery');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS along with cc-df-02, while keeping cc-df-03 coming soon', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS along with cc-df-02 and cc-df-03', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-df-01')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-df-02')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-df-03')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-df-03')).toBe(true);
   });
 
   it('preserves all nine previously built live challenges across phishing, secops, and network', () => {

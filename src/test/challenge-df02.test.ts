@@ -60,9 +60,9 @@ describe('cc-df-02 registration & metadata', () => {
     expect(found?.title).toBe('Browser History Reconstruction');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS, while keeping cc-df-03 coming soon', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS along with all live challenges', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-df-02')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-df-03')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-df-03')).toBe(true);
   });
 
   it('preserves all 10 previously built live challenges across all rooms', () => {
