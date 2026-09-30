@@ -4,7 +4,7 @@ import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
   MessageSquare, Building2, UserCheck, ShieldAlert,
   Inbox, ExternalLink, ShieldCheck, ChevronDown, ChevronUp, Activity, Network, Search,
-  HardDrive, File, Trash2,
+  HardDrive, File, Trash2, Globe,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge, getRoom } from '../challenges';
@@ -14,6 +14,7 @@ import { Button } from '../components/ui/Button';
 import { NotFoundPage } from './NotFoundPage';
 import type { EvidenceItem, Step, StepResponse } from '../types';
 import type { FileSystemContent } from '../challenges/data/cc-df-01';
+import type { BrowserHistoryContent, ProxyLogContent } from '../challenges/data/cc-df-02';
 import styles from './ChallengePage.module.css';
 
 // ── Evidence Viewers ──────────────────────────────────────────────────────────
@@ -1606,6 +1607,463 @@ const FileSystemViewer: React.FC<{ content: FileSystemContent }> = ({ content })
   );
 };
 
+const BrowserHistoryViewer: React.FC<{ content: BrowserHistoryContent }> = ({ content }) => {
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(
+    content.records.length > 0 ? content.records[0].recordId : null
+  );
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [transitionFilter, setTransitionFilter] = useState<'all' | 'typed' | 'link' | 'auto_subframe'>('all');
+
+  const filteredRecords = useMemo(() => {
+    return content.records.filter((rec) => {
+      if (transitionFilter !== 'all' && rec.transition !== transitionFilter) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const query = searchTerm.toLowerCase();
+        const matchUrl = rec.url.toLowerCase().includes(query);
+        const matchTitle = rec.title.toLowerCase().includes(query);
+        const matchId = rec.recordId.toLowerCase().includes(query) || String(rec.id) === query;
+        const matchNotes = rec.notes?.toLowerCase().includes(query) ?? false;
+        if (!matchUrl && !matchTitle && !matchId && !matchNotes) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [content.records, transitionFilter, searchTerm]);
+
+  const selectedRecord = useMemo(() => {
+    return content.records.find((r) => r.recordId === selectedRecordId) || null;
+  }, [content.records, selectedRecordId]);
+
+  return (
+    <div className={styles.bhViewer} role="region" aria-label="Workstation Browser History Triage">
+      <div className={styles.bhHeader}>
+        <div className={styles.bhHeaderLeft}>
+          <Globe size={22} className={styles.bhIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.bhTitle}>{content.sourceFile}</h3>
+            <p className={styles.bhMeta}>
+              <span>Host: <strong>{content.host}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Profile: <strong>{content.browserProfile}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Records: <strong>{content.totalRecords}</strong></span>
+            </p>
+          </div>
+        </div>
+        <div className={styles.bhCaseBadge}>{content.caseReference}</div>
+      </div>
+
+      {content.guidanceNote && (
+        <div className={styles.bhGuidanceCard}>
+          <div className={styles.bhGuidanceHeader}>
+            <FileText size={15} aria-hidden="true" />
+            <span>{content.guidanceNote.title}</span>
+          </div>
+          <ul className={styles.bhGuidanceList}>
+            {content.guidanceNote.rules.map((rule, idx) => (
+              <li key={idx}>{rule}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className={styles.bhFilterBar}>
+        <div className={styles.bhFilterLeft}>
+          <div className={styles.bhSearchBox}>
+            <Search size={14} className={styles.bhSearchIcon} aria-hidden="true" />
+            <input
+              type="text"
+              className={styles.bhSearchInput}
+              placeholder="Search URL, title, or record..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Filter browser history by keyword"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className={styles.bhSearchClear}
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <div className={styles.bhFilterButtons} role="radiogroup" aria-label="Filter by transition type">
+            {(['all', 'typed', 'link', 'auto_subframe'] as const).map((trans) => (
+              <button
+                key={trans}
+                type="button"
+                className={`${styles.bhFilterBtn} ${transitionFilter === trans ? styles.bhFilterBtnActive : ''}`}
+                onClick={() => setTransitionFilter(trans)}
+              >
+                {trans === 'all' ? 'All Transitions' : trans === 'auto_subframe' ? 'Subframe' : trans.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={styles.bhCountBadge}>
+          Showing {filteredRecords.length} of {content.records.length} records
+        </div>
+      </div>
+
+      <div className={styles.bhLayout}>
+        <div className={styles.bhTableWrapper}>
+          <table className={styles.bhTable}>
+            <thead>
+              <tr>
+                <th scope="col" style={{ width: '45px' }}>#</th>
+                <th scope="col" style={{ width: '130px' }}>Visited (UTC)</th>
+                <th scope="col">Title &amp; Destination URL</th>
+                <th scope="col" style={{ width: '90px' }}>Transition</th>
+                <th scope="col" style={{ width: '75px' }}>Visits</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecords.map((rec) => {
+                const isSelected = rec.recordId === selectedRecordId;
+                return (
+                  <tr
+                    key={rec.recordId}
+                    onClick={() => setSelectedRecordId(rec.recordId)}
+                    className={`${styles.bhRow} ${isSelected ? styles.bhRowSelected : ''}`}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={isSelected}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedRecordId(rec.recordId);
+                      }
+                    }}
+                  >
+                    <td>
+                      <span className={styles.bhIdBadge}>#{rec.id}</span>
+                    </td>
+                    <td className={styles.bhTimeCell}>
+                      {rec.visitTime.replace(' UTC', '')}
+                    </td>
+                    <td className={styles.bhTitleUrlCell}>
+                      <span className={styles.bhTitleText}>{rec.title || '(No page title recorded)'}</span>
+                      <span className={styles.bhUrlText}>{rec.url}</span>
+                    </td>
+                    <td>
+                      <span className={`${styles.bhTransitionTag} ${styles[`bhTransition_${rec.transition}`] || ''}`}>
+                        {rec.transition}
+                      </span>
+                    </td>
+                    <td className={styles.bhCountsCell}>
+                      {rec.visitCount}v / {rec.typedCount}t
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className={styles.bhInspectorColumn}>
+          {selectedRecord ? (
+            <div className={styles.bhInspector}>
+              <div className={styles.bhInspectorHeader}>
+                <div className={styles.bhInspectorTitleGroup}>
+                  <span className={styles.bhIdBadge}>SQLite ID #{selectedRecord.id}</span>
+                  <span className={`${styles.bhTransitionTag} ${styles[`bhTransition_${selectedRecord.transition}`] || ''}`}>
+                    {selectedRecord.transition}
+                  </span>
+                </div>
+                <span className={styles.bhInspectorTitle}>{selectedRecord.recordId.toUpperCase()}</span>
+              </div>
+
+              <div className={styles.bhInspectorUrl}>{selectedRecord.url}</div>
+
+              <div className={styles.bhMetaGrid}>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Page Title</span>
+                  <span className={styles.bhMetaValue}>{selectedRecord.title || '(None)'}</span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Recorded Visit Time (UTC)</span>
+                  <span className={styles.bhMetaValue}><code>{selectedRecord.visitTime}</code></span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Transition Type Semantics</span>
+                  <span className={styles.bhMetaValue}>
+                    {selectedRecord.transition === 'typed'
+                      ? 'Direct manual address bar entry (Typed by user)'
+                      : selectedRecord.transition === 'link'
+                      ? 'Followed hyperlink from referring webpage'
+                      : 'Passive embedded subframe (ad/tracker pixel/resource; no manual click)'}
+                  </span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Visit / Typed Counters</span>
+                  <span className={styles.bhMetaValue}>
+                    Visit Count: <strong>{selectedRecord.visitCount}</strong> | Typed Count: <strong>{selectedRecord.typedCount}</strong>
+                  </span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Hidden Resource Flag</span>
+                  <span className={styles.bhMetaValue}>{selectedRecord.hidden ? 'True (Hidden / Subframe)' : 'False (User-Visible Tab)'}</span>
+                </div>
+              </div>
+
+              {selectedRecord.notes && (
+                <div className={styles.bhNoteSection}>
+                  <div className={styles.bhNoteHeader}>Forensic Triage Note</div>
+                  <div>{selectedRecord.notes}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={styles.bhEmptyInspector}>
+              <p>Select any browser history row to inspect SQLite record details and transitions.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProxyLogViewer: React.FC<{ content: ProxyLogContent }> = ({ content }) => {
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(
+    content.entries.length > 0 ? content.entries[0].id : null
+  );
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [methodFilter, setMethodFilter] = useState<'all' | 'GET' | 'POST'>('all');
+
+  const filteredEntries = useMemo(() => {
+    return content.entries.filter((entry) => {
+      if (methodFilter !== 'all' && entry.method !== methodFilter) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const query = searchTerm.toLowerCase();
+        const matchUrl = entry.destinationUrl.toLowerCase().includes(query);
+        const matchHost = entry.host.toLowerCase().includes(query);
+        const matchCat = entry.category.toLowerCase().includes(query);
+        const matchNotes = entry.notes?.toLowerCase().includes(query) ?? false;
+        if (!matchUrl && !matchHost && !matchCat && !matchNotes) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [content.entries, methodFilter, searchTerm]);
+
+  const selectedEntry = useMemo(() => {
+    return content.entries.find((e) => e.id === selectedEntryId) || null;
+  }, [content.entries, selectedEntryId]);
+
+  return (
+    <div className={styles.proxyViewer} role="region" aria-label="Forward Proxy Egress Logs">
+      <div className={styles.proxyHeader}>
+        <div className={styles.proxyHeaderLeft}>
+          <Network size={22} className={styles.proxyIcon} aria-hidden="true" />
+          <div>
+            <h3 className={styles.proxyTitle}>{content.appliance}</h3>
+            <p className={styles.proxyMeta}>
+              <span>Client: <strong>{content.monitoredClientIp}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>User: <strong>{content.authenticatedUser}</strong></span>
+              <span className={styles.metaDivider}>•</span>
+              <span>Capture File: <code>{content.logFile}</code></span>
+            </p>
+          </div>
+        </div>
+        <div className={styles.bhCaseBadge}>{content.timeRange}</div>
+      </div>
+
+      {content.guidanceNote && (
+        <div className={styles.proxyGuidanceCard}>
+          <div className={styles.proxyGuidanceHeader}>
+            <FileText size={15} aria-hidden="true" />
+            <span>{content.guidanceNote.title}</span>
+          </div>
+          <ul className={styles.proxyGuidanceList}>
+            {content.guidanceNote.rules.map((rule, idx) => (
+              <li key={idx}>{rule}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className={styles.proxyFilterBar}>
+        <div className={styles.bhFilterLeft}>
+          <div className={styles.bhSearchBox}>
+            <Search size={14} className={styles.bhSearchIcon} aria-hidden="true" />
+            <input
+              type="text"
+              className={styles.bhSearchInput}
+              placeholder="Search URL, host, category, or note..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Filter proxy logs by keyword"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className={styles.bhSearchClear}
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <div className={styles.bhFilterButtons} role="radiogroup" aria-label="Filter by HTTP method">
+            {(['all', 'GET', 'POST'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={`${styles.bhFilterBtn} ${methodFilter === m ? styles.bhFilterBtnActive : ''}`}
+                onClick={() => setMethodFilter(m)}
+              >
+                {m === 'all' ? 'All Methods' : m}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={styles.bhCountBadge}>
+          Showing {filteredEntries.length} of {content.entries.length} proxy records
+        </div>
+      </div>
+
+      <div className={styles.proxyLayout}>
+        <div className={styles.proxyTableWrapper}>
+          <table className={styles.proxyTable}>
+            <thead>
+              <tr>
+                <th scope="col" style={{ width: '130px' }}>Timestamp (UTC)</th>
+                <th scope="col" style={{ width: '65px' }}>Method</th>
+                <th scope="col" style={{ width: '55px' }}>Status</th>
+                <th scope="col">Destination URL / Host</th>
+                <th scope="col" style={{ width: '110px' }}>Bytes Out / In</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEntries.map((entry) => {
+                const isSelected = entry.id === selectedEntryId;
+                const isBigUpload = entry.bytesSent > 1000000;
+                return (
+                  <tr
+                    key={entry.id}
+                    onClick={() => setSelectedEntryId(entry.id)}
+                    className={`${styles.proxyRow} ${isSelected ? styles.proxyRowSelected : ''}`}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={isSelected}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedEntryId(entry.id);
+                      }
+                    }}
+                  >
+                    <td className={styles.bhTimeCell}>
+                      {entry.timestamp.replace(' UTC', '')}
+                    </td>
+                    <td>
+                      <span className={`${styles.proxyMethodTag} ${styles[`proxyMethod_${entry.method}`] || ''}`}>
+                        {entry.method}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.proxyStatusTag}>{entry.statusCode}</span>
+                    </td>
+                    <td className={styles.bhTitleUrlCell}>
+                      <span className={styles.bhTitleText}>{entry.host}</span>
+                      <span className={styles.bhUrlText}>{entry.destinationUrl}</span>
+                    </td>
+                    <td className={styles.proxyBytesCell}>
+                      <span className={isBigUpload ? styles.proxyBytesUploadAlert : ''}>
+                        {isBigUpload ? `${(entry.bytesSent / 1000000).toFixed(1)} MB` : `${entry.bytesSent} B`}
+                      </span>
+                      {' / '}
+                      <span>
+                        {entry.bytesReceived > 1000000
+                          ? `${(entry.bytesReceived / 1000000).toFixed(1)} MB`
+                          : entry.bytesReceived > 1000
+                          ? `${(entry.bytesReceived / 1000).toFixed(1)} KB`
+                          : `${entry.bytesReceived} B`}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className={styles.proxyInspectorColumn}>
+          {selectedEntry ? (
+            <div className={styles.proxyInspector}>
+              <div className={styles.proxyInspectorHeader}>
+                <div className={styles.bhInspectorTitleGroup}>
+                  <span className={`${styles.proxyMethodTag} ${styles[`proxyMethod_${selectedEntry.method}`] || ''}`}>
+                    {selectedEntry.method}
+                  </span>
+                  <span className={styles.proxyStatusTag}>HTTP {selectedEntry.statusCode}</span>
+                </div>
+                <span className={styles.proxyInspectorTitle}>{selectedEntry.id.toUpperCase()}</span>
+              </div>
+
+              <div className={styles.proxyInspectorUrl}>{selectedEntry.destinationUrl}</div>
+
+              <div className={styles.bhMetaGrid}>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Client IP &amp; Authenticated User</span>
+                  <span className={styles.bhMetaValue}>
+                    <code>{selectedEntry.clientIp}</code> ({selectedEntry.user})
+                  </span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Timestamp (NTP-Synchronized UTC)</span>
+                  <span className={styles.bhMetaValue}><code>{selectedEntry.timestamp}</code></span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Volumetrics (Data Exfiltration Indicator)</span>
+                  <span className={styles.bhMetaValue}>
+                    Bytes Sent: <strong style={{ color: selectedEntry.bytesSent > 1000000 ? '#fb7185' : 'inherit' }}>
+                      {selectedEntry.bytesSent.toLocaleString()} bytes {selectedEntry.bytesSent > 1000000 ? `(${(selectedEntry.bytesSent / 1000000).toFixed(2)} MB)` : ''}
+                    </strong>
+                    <br />
+                    Bytes Received: <strong>{selectedEntry.bytesReceived.toLocaleString()} bytes</strong>
+                  </span>
+                </div>
+                <div className={styles.bhMetaItem}>
+                  <span className={styles.bhMetaLabel}>Policy Category &amp; Latency</span>
+                  <span className={styles.bhMetaValue}>
+                    {selectedEntry.category} ({selectedEntry.durationMs} ms)
+                  </span>
+                </div>
+              </div>
+
+              {selectedEntry.notes && (
+                <div className={selectedEntry.bytesSent > 1000000 ? styles.proxyAlertSection : styles.bhNoteSection}>
+                  <div className={selectedEntry.bytesSent > 1000000 ? styles.proxyAlertHeader : styles.bhNoteHeader}>
+                    {selectedEntry.bytesSent > 1000000 ? 'Exfiltration Volumetric Alert' : 'Gateway Observation'}
+                  </div>
+                  <div>{selectedEntry.notes}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={styles.bhEmptyInspector}>
+              <p>Select any proxy log row to inspect egress parameters and volumetrics.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   if (item.type === 'email') {
     const raw = item.content as Record<string, unknown>;
@@ -1617,14 +2075,23 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
     }
     return <EmailViewer content={item.content as unknown as EmailContent} />;
   }
-  if (item.type === 'policy' || item.type === 'file') {
+  if (item.type === 'file') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isBrowserHistory || Array.isArray(raw?.records)) {
+      return <BrowserHistoryViewer content={raw as unknown as BrowserHistoryContent} />;
+    }
     if (raw?.isFileSystem || Array.isArray(raw?.files)) {
       return <FileSystemViewer content={raw as unknown as FileSystemContent} />;
     }
     if (raw?.type === 'directory') {
       return <CompanyDirectoryViewer content={raw as unknown as DirectoryContent} />;
     }
+    if (raw?.rules && Array.isArray(raw.rules)) {
+      return <PolicyDocumentViewer content={raw as unknown as PolicyDocumentContent} />;
+    }
+  }
+  if (item.type === 'policy') {
+    const raw = item.content as Record<string, unknown>;
     if (raw?.rules && Array.isArray(raw.rules)) {
       return <PolicyDocumentViewer content={raw as unknown as PolicyDocumentContent} />;
     }
@@ -1641,6 +2108,9 @@ const EvidenceViewer: React.FC<{ item: EvidenceItem }> = ({ item }) => {
   }
   if (item.type === 'log') {
     const raw = item.content as Record<string, unknown>;
+    if (raw?.isProxyLog || Array.isArray(raw?.entries)) {
+      return <ProxyLogViewer content={raw as unknown as ProxyLogContent} />;
+    }
     if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
       return <AlertViewer content={raw as unknown as AlertQueueContent} />;
     }
@@ -1687,6 +2157,50 @@ const FlagSelection: React.FC<{
     })}
   </div>
 );
+
+const MultiChoice: React.FC<{
+  step: Step;
+  value: string[];
+  onChange: (v: string[]) => void;
+  submitted: boolean;
+}> = ({ step, value, onChange, submitted }) => {
+  const currentSet = new Set(Array.isArray(value) ? value : []);
+  const toggle = (id: string) => {
+    if (submitted) return;
+    const next = new Set(currentSet);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    onChange(Array.from(next));
+  };
+
+  return (
+    <div className={styles.flagList} role="group" aria-label={step.prompt}>
+      {step.items.map((item) => {
+        const checked = currentSet.has(item.id);
+        return (
+          <label
+            key={item.id}
+            className={`${styles.flagItem} ${checked ? styles['flagItem--checked'] : ''}`}
+            aria-label={item.label}
+          >
+            <input
+              type="checkbox"
+              className={styles.flagCheckbox}
+              checked={checked}
+              disabled={submitted}
+              onChange={() => toggle(item.id)}
+              id={`multichoice-${step.id}-${item.id}`}
+            />
+            <span className={styles.flagLabel}>{item.label}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+};
 
 const SingleChoice: React.FC<{
   step: Step;
@@ -1877,6 +2391,8 @@ export const ChallengePage: React.FC = () => {
         initial[step.id] = {};
       } else if (step.interaction === 'ordering' || step.interaction === 'ranking') {
         initial[step.id] = step.items.map((i) => i.id);
+      } else if (step.interaction === 'multi-choice') {
+        initial[step.id] = [];
       } else {
         initial[step.id] = '';
       }
@@ -1915,6 +2431,13 @@ export const ChallengePage: React.FC = () => {
       if (step.interaction === 'single-choice' && !val) {
         setValidationError(`Please select an option for step ${challenge.steps.indexOf(step) + 1}.`);
         return false;
+      }
+      if (step.interaction === 'multi-choice') {
+        const arr = (val as string[]) || [];
+        if (arr.length === 0) {
+          setValidationError(`Please select at least one option for step ${challenge.steps.indexOf(step) + 1}.`);
+          return false;
+        }
       }
       if (step.interaction === 'classification') {
         const classVal = (val as Record<string, string>) || {};
@@ -1961,10 +2484,15 @@ export const ChallengePage: React.FC = () => {
       }
       return <Mail size={14} aria-hidden="true" />;
     }
-    if (ev.type === 'policy' || ev.type === 'file') return <Building2 size={14} aria-hidden="true" />;
-    if (ev.type === 'network') return <Network size={14} aria-hidden="true" />;
+    if (ev.type === 'policy' || ev.type === 'file') {
+      const raw = ev.content as Record<string, unknown>;
+      if (raw?.isBrowserHistory) return <Globe size={14} aria-hidden="true" />;
+      return <Building2 size={14} aria-hidden="true" />;
+    }
+    if (ev.type === 'network' || ev.type === 'network-packet') return <Network size={14} aria-hidden="true" />;
     if (ev.type === 'log') {
       const raw = ev.content as Record<string, unknown>;
+      if (raw?.isProxyLog) return <Network size={14} aria-hidden="true" />;
       if (raw?.isAlertQueue || Array.isArray(raw?.alerts)) {
         return <ShieldAlert size={14} aria-hidden="true" />;
       }
@@ -2084,6 +2612,14 @@ export const ChallengePage: React.FC = () => {
                     <SingleChoice
                       step={step}
                       value={stepState[step.id] as string ?? ''}
+                      onChange={(v) => handleStepChange(step.id, v)}
+                      submitted={isSubmitted}
+                    />
+                  )}
+                  {step.interaction === 'multi-choice' && (
+                    <MultiChoice
+                      step={step}
+                      value={(stepState[step.id] as string[]) || []}
                       onChange={(v) => handleStepChange(step.id, v)}
                       submitted={isSubmitted}
                     />

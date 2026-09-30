@@ -290,8 +290,8 @@ export const challengeCC_DF_01: Challenge = {
         effectiveDate: '2026-01-15',
         classification: 'INTERNAL FORENSIC STANDARD',
         rules: [
-          'Rule 1 (Order of Volatility & Acquisition): First responders must acquire digital evidence in order of volatility (RFC 3227). When handling fixed storage media, investigators must create a bit-stream physical duplicate (e.g. Expert Witness Format .E01 or raw .DD) utilizing hardware write-blocking to prevent accidental write operations.',
-          'Rule 2 (Cryptographic Integrity Verification): All acquired forensic disk images and recovered evidence items must be hashed immediately using SHA-256 upon acquisition and re-verified before and after analysis. Hashes must match exactly to prove the evidence was not altered.',
+          'Rule 1 (Order of Volatility & Acquisition): First responders acquire digital evidence in order of volatility (RFC 3227) creating a bit-stream physical duplicate (e.g. Expert Witness Format .E01 or raw .DD) utilizing hardware write-blocking. Once acquired, all subsequent forensic examinations must be conducted on verified working copies.',
+          'Rule 2 (Cryptographic Integrity Verification): All acquired forensic disk images and recovered evidence items must be hashed immediately using SHA-256 upon acquisition and re-verified before and after analysis against the recorded chain-of-custody hash. Hashes must match exactly to prove the evidence was not altered.',
           'Rule 3 (Chain of Custody Documentation): A continuous chain-of-custody form must record the date, time, acquiring investigator, storage location, and hash verification logs for every physical device and forensic image container.',
           'Rule 4 (Prohibition of Live Media Tampering): Analysts must NEVER inspect suspect storage media by mounting it read-write, booting the host workstation (even into Safe Mode), opening files directly in productivity software (e.g. Microsoft Excel), or copying files via Windows Explorer. Such actions overwrite NTFS access timestamps ($STANDARD_INFORMATION), modify swap/pagefile contents, and destroy slack space.',
           'Rule 5 (Interpretation of Deleted Files): Modern operating systems and applications continuously create, modify, and delete files (such as browser cache, application installers, and temporary workspace drafts). A file marked "deleted" is NOT inherently malicious. Investigators must establish relevance through content inspection, timestamp correlation, and unusual directory placement (e.g. staging in %TEMP%).',
@@ -384,28 +384,28 @@ export const challengeCC_DF_01: Challenge = {
     {
       id: 'step-preservation-action',
       prompt:
-        'Following the identification of the exfiltrated file and recovery of residual clusters, what is the forensically sound procedure for securing and preserving the evidence under SOP FOR-101?',
+        'With the forensic E01 bit-stream image of the workstation already acquired and staged for triage, what is the forensically sound procedure for verifying evidence integrity, documenting custody, and conducting further analysis under SOP FOR-101?',
       interaction: 'single-choice',
       items: [
         {
           id: 'action-bitstream-image',
           label:
-            'Acquire a verified bit-stream physical image (e.g. E01 / raw DD) using a hardware write-blocker, generate SHA-256 hashes for integrity verification, and maintain a chain-of-custody log before starting deep analysis.',
+            'Verify the existing E01 image’s recorded SHA-256 hash against chain-of-custody documentation, log evidence custody, and conduct all subsequent forensic analysis on a verified working copy rather than the original master image.',
         },
         {
           id: 'action-copy-usb',
           label:
-            'Copy the recovered CSV file onto an administrative USB flash drive using Windows File Explorer to quickly email it to the legal department.',
+            'Copy the recovered CSV file onto an administrative USB flash drive using Windows File Explorer on the live laptop to quickly email it to the legal department.',
         },
         {
           id: 'action-excel-safe-mode',
           label:
-            'Boot the workstation into Safe Mode and open the CSV in Microsoft Excel to inspect all client rows directly on the drive.',
+            'Boot the original physical laptop into Safe Mode and open the CSV in Microsoft Excel to inspect client rows directly on the drive media.',
         },
         {
           id: 'action-run-wiper',
           label:
-            'Run a secure disk wiper on the %TEMP% directory to eliminate residual customer records from the employee machine.',
+            'Run a secure disk wiper on the original workstation %TEMP% directory before completing documentation to eliminate residual customer records.',
         },
       ],
       answerKey: { chosen: 'action-bitstream-image' },
@@ -418,7 +418,7 @@ export const challengeCC_DF_01: Challenge = {
   hints: [
     'Do not assume that every deleted file is malicious. Normal operating system tasks and users routinely delete installers, cache files, and templates. Look closely at file paths, creation and deletion timestamps, and recovered content previews.',
     'Examine client_tax_records_2026.csv located in AppData\\Local\\Temp. Check its creation (14:15 UTC) and deletion (16:45 UTC) timestamps on the day of the leak, and read its recovered content preview.',
-    'Standard forensic guidelines (SOP FOR-101) require investigators to work exclusively from verified bit-stream physical images (E01/DD) acquired with write-blocking and cryptographic hash verification to preserve evidence integrity and maintain chain of custody.',
+    'Because the bit-stream E01 image has already been acquired, SOP FOR-101 dictates verifying its recorded SHA-256 hash against custody logs, documenting evidence transfer, and analyzing a verified working copy so the original master image remains untampered.',
   ],
 
   // ── Skills ────────────────────────────────────────────────────────────────
@@ -435,10 +435,10 @@ export const challengeCC_DF_01: Challenge = {
 
   // ── Explanations ─────────────────────────────────────────────────────────
   successExplanation:
-    'Outstanding forensic investigation! You properly navigated the triage image, distinguished innocent routine file deletions from genuine incident artifacts, identified the exfiltrated customer database, and selected the correct evidence preservation protocol.\n\nInvestigation Findings Breakdown:\n1. Target File Identification:\n- `client_tax_records_2026.csv` in `AppData\\Local\\Temp` was the primary exfiltrated file.\n- The recovered content preview contains 1,420 unmasked customer records, routing numbers, and account balances matching the public paste site dump.\n- The file was created at 14:15 UTC, modified at 16:22 UTC, and deleted at 16:45 UTC on 2026-09-24, shortly before the analyst vacated the facility.\n\n2. Avoiding the "Deleted = Malicious" Fallacy:\n- Files like `slack_setup_x64.exe` (installer), `f_0001a4` (browser cache), and `meeting_notes_september.docx` (meeting draft) were deleted as part of routine system hygiene.\n- `confidential_salary_review.xlsx` looked suspicious by name, but content inspection confirmed it was an empty corporate review template discarded months prior.\n- `cleanup_temp_files.ps1` looked like an anti-forensics wiper, but its digital signature and comments proved it was an official Veridian IT maintenance script (CHG-8109).\n\n3. Evidence Preservation Standards:\n- Copying files with Windows File Explorer or opening them in Excel alters filesystem access timestamps ($STANDARD_INFORMATION) and pagefile data.\n- Admissible forensics requires bit-stream physical imaging (E01/DD) with hardware write-blocking, cryptographic hashing (SHA-256), and meticulous chain-of-custody records.',
+    'Outstanding forensic investigation! You properly navigated the triage image, distinguished innocent routine file deletions from genuine incident artifacts, identified the exfiltrated customer database, and selected the correct evidence preservation protocol.\n\nInvestigation Findings Breakdown:\n1. Target File Identification:\n- `client_tax_records_2026.csv` in `AppData\\Local\\Temp` was the primary exfiltrated file.\n- The recovered content preview contains 1,420 unmasked customer records, routing numbers, and account balances matching the public paste site dump.\n- The file was created at 14:15 UTC, modified at 16:22 UTC, and deleted at 16:45 UTC on 2026-09-24, shortly before the analyst vacated the facility.\n\n2. Avoiding the "Deleted = Malicious" Fallacy:\n- Files like `slack_setup_x64.exe` (installer), `f_0001a4` (browser cache), and `meeting_notes_september.docx` (meeting draft) were deleted as part of routine system hygiene.\n- `confidential_salary_review.xlsx` looked suspicious by name, but content inspection confirmed it was an empty corporate review template discarded months prior.\n- `cleanup_temp_files.ps1` looked like an anti-forensics wiper, but its digital signature and comments proved it was an official Veridian IT maintenance script (CHG-8109).\n\n3. Evidence Preservation & Verification Standards:\n- Since the bit-stream E01 physical image was already captured upon laptop surrender using hardware write-blocking, examiners must not acquire the same image again or manipulate live storage media.\n- Sound forensic procedure requires verifying the existing image\'s recorded SHA-256 hash against chain-of-custody records, documenting evidence transfer, and performing all examination on a verified working copy.\n- Actions like copying files with Windows File Explorer or booting suspect hardware into Safe Mode alter filesystem timestamps and spoil evidence.',
 
   failureExplanation:
-    'Successful digital forensics requires correlating file metadata, timestamps, and recovered content rather than jumping to conclusions based on file names or deleted status alone.\n\nKey Forensic Lessons:\n- Normal vs Malicious Deletion: Operating systems constantly delete temporary files, installers, and caches. Deletion by itself is never proof of compromise.\n- Evidence Correlation: The file `client_tax_records_2026.csv` was proven guilty because its content matched the leaked paste, its staging in %TEMP% was anomalous, and its creation/deletion timestamps closely matched the exfiltration window.\n- Don\'t Fall for Name Distractors: An empty template named "confidential salary" or a legitimate IT script named "cleanup" can easily distract an analyst who does not inspect the recovered file content.\n- Preservation Rules: Always acquire a bit-stream physical image (E01/DD) using write-blocking and verify SHA-256 hashes. Never open suspect evidence on live machines.',
+    'Successful digital forensics requires correlating file metadata, timestamps, and recovered content rather than jumping to conclusions based on file names or deleted status alone.\n\nKey Forensic Lessons:\n- Normal vs Malicious Deletion: Operating systems constantly delete temporary files, installers, and caches. Deletion by itself is never proof of compromise.\n- Evidence Correlation: The file `client_tax_records_2026.csv` was proven guilty because its content matched the leaked paste, its staging in %TEMP% was anomalous, and its creation/deletion timestamps closely matched the exfiltration window.\n- Don\'t Fall for Name Distractors: An empty template named "confidential salary" or a legitimate IT script named "cleanup" can easily distract an analyst who does not inspect the recovered file content.\n- Preservation Rules: Because an E01 forensic image was already acquired, the correct protocol is to verify its recorded SHA-256 cryptographic hash against custody documentation, log the chain of custody, and perform all analysis on a verified working copy without modifying the master evidence.',
 
   shuffleItems: false,
 };

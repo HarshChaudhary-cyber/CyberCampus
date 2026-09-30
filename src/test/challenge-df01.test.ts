@@ -52,9 +52,9 @@ describe('cc-df-01 registration & metadata', () => {
     expect(found?.title).toBe('Deleted File Recovery');
   });
 
-  it('is marked as live in LIVE_CHALLENGE_IDS, while keeping cc-df-02 and cc-df-03 coming soon', () => {
+  it('is marked as live in LIVE_CHALLENGE_IDS along with cc-df-02, while keeping cc-df-03 coming soon', () => {
     expect(LIVE_CHALLENGE_IDS.has('cc-df-01')).toBe(true);
-    expect(LIVE_CHALLENGE_IDS.has('cc-df-02')).toBe(false);
+    expect(LIVE_CHALLENGE_IDS.has('cc-df-02')).toBe(true);
     expect(LIVE_CHALLENGE_IDS.has('cc-df-03')).toBe(false);
   });
 
@@ -243,7 +243,7 @@ describe('cc-df-01 Step 2: corroborating forensic evidence', () => {
 // ── Step 3: Evidence Preservation Action (35 pts) ────────────────────────────
 
 describe('cc-df-01 Step 3: evidence preservation action', () => {
-  it('awards full 35 pts for verified bit-stream physical imaging under write-blocker', () => {
+  it('awards full 35 pts for verifying existing image hash, maintaining custody, and analyzing working copy', () => {
     const submission = 'action-bitstream-image';
     const points = evaluateStep(stepPreservation, submission);
     expect(points).toBe(35);
@@ -380,8 +380,8 @@ describe('cc-df-01 educational explanations & answer formatting', () => {
     expect(disp2).toContain('ephemeral temporary folder (AppData\\Local\\Temp)');
 
     const disp3 = getCorrectAnswerDisplay(stepPreservation);
-    expect(disp3).toContain('Acquire a verified bit-stream physical image');
-    expect(disp3).toContain('hardware write-blocker');
+    expect(disp3).toContain('Verify the existing E01 image’s recorded SHA-256 hash');
+    expect(disp3).toContain('verified working copy');
   });
 });
 
