@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, FileText, AlertCircle, Paperclip,
@@ -8,12 +8,12 @@ import {
   KeyRound, Eye, EyeOff, Smartphone, Bell, SlidersHorizontal, Database,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
-import { getChallenge, getRoom } from '../challenges';
+import { getRoom, loadChallenge, getLoadedChallenge } from '../challenges';
 import { buildStepResponses } from '../challenges/evaluator';
 import { HintDrawer } from '../components/ui/HintDrawer';
 import { Button } from '../components/ui/Button';
 import { NotFoundPage } from './NotFoundPage';
-import type { EvidenceItem, Step, StepResponse } from '../types';
+import type { Challenge, EvidenceItem, Step, StepResponse } from '../types';
 import type { FileSystemContent } from '../challenges/data/cc-df-01';
 import type { BrowserHistoryContent, ProxyLogContent } from '../challenges/data/cc-df-02';
 import type { StegoEvidenceContent } from '../challenges/data/cc-df-03';
@@ -3351,44 +3351,140 @@ const GuidedForm: React.FC<{
 
 type StepState = Record<string, StepResponse['submitted']>;
 
+function getInitialStepState(challenge: Challenge | null): StepState {
+  const initial: StepState = {};
+  if (!challenge) return initial;
+  for (const step of challenge.steps) {
+    if (step.interaction === 'flag-selection') {
+      initial[step.id] = {};
+    } else if (step.interaction === 'single-choice') {
+      initial[step.id] = '';
+    } else if (step.interaction === 'classification' || step.interaction === 'guided-form') {
+      initial[step.id] = {};
+    } else if (step.interaction === 'ordering' || step.interaction === 'ranking') {
+      initial[step.id] = step.items.map((i) => i.id);
+    } else if (step.interaction === 'multi-choice') {
+      initial[step.id] = [];
+    } else {
+      initial[step.id] = '';
+    }
+  }
+  return initial;
+}
+
 export const ChallengePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { progress, recordAttempt } = useCyberStore();
 
-  const challenge = id ? getChallenge(id) : undefined;
+  const [challenge, setChallenge] = useState<Challenge | null>(() =>
+    id ? (getLoadedChallenge(id) ?? null) : null
+  );
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadCounter, setReloadCounter] = useState(0);
 
-  // ── Local state ──
   const [activeEvidence, setActiveEvidence] = useState(0);
-  const [stepState, setStepState] = useState<StepState>(() => {
-    const initial: StepState = {};
-    if (!challenge) return initial;
-    for (const step of challenge.steps) {
-      if (step.interaction === 'flag-selection') {
-        initial[step.id] = {};
-      } else if (step.interaction === 'single-choice') {
-        initial[step.id] = '';
-      } else if (step.interaction === 'classification' || step.interaction === 'guided-form') {
-        initial[step.id] = {};
-      } else if (step.interaction === 'ordering' || step.interaction === 'ranking') {
-        initial[step.id] = step.items.map((i) => i.id);
-      } else if (step.interaction === 'multi-choice') {
-        initial[step.id] = [];
-      } else {
-        initial[step.id] = '';
-      }
-    }
-    return initial;
-  });
+  const [stepState, setStepState] = useState<StepState>(() => getInitialStepState(challenge));
   const [hintsUsed, setHintsUsed] = useState(0);
   const [validationError, setValidationError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const submitting = useRef(false); // prevent duplicate submission
 
+  const [prevChallengeId, setPrevChallengeId] = useState(challenge?.id);
+  if (challenge && challenge.id !== prevChallengeId) {
+    setPrevChallengeId(challenge.id);
+    setStepState(getInitialStepState(challenge));
+    setActiveEvidence(0);
+    setHintsUsed(0);
+    setValidationError('');
+    setIsSubmitted(false);
+  }
+
+  useEffect(() => {
+    if (!id) return;
+    if (challenge && challenge.id === id) return;
+
+    let isCurrent = true;
+    loadChallenge(id)
+      .then((loaded) => {
+        if (!isCurrent) return;
+        if (loaded) {
+          setChallenge(loaded);
+        } else {
+          setLoadError('Challenge not found in curriculum.');
+        }
+      })
+      .catch((err) => {
+        if (!isCurrent) return;
+        setLoadError(err?.message || 'Failed to download challenge evidence.');
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [id, reloadCounter, challenge]);
+
   const totalHints = challenge?.hints.length ?? 0;
   const handleRevealHint = useCallback(() => {
     setHintsUsed((n) => Math.min(n + 1, totalHints));
-  }, [totalHints]);
+  }, [totalHints, setHintsUsed]);
+
+  const loading = !challenge && !loadError;
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '400px',
+            gap: 'var(--space-4)',
+            color: 'var(--color-text-muted)',
+          }}
+        >
+          <Activity size={36} className="spinning" aria-hidden="true" />
+          <span style={{ fontSize: 'var(--text-base)' }}>Loading simulation evidence and briefing...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className={styles.page}>
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '400px',
+            gap: 'var(--space-4)',
+            textAlign: 'center',
+            padding: 'var(--space-6)',
+          }}
+        >
+          <AlertCircle size={44} style={{ color: 'var(--color-danger)' }} aria-hidden="true" />
+          <h2 style={{ fontSize: 'var(--text-2xl)', margin: 0 }}>Unable to Load Challenge</h2>
+          <p style={{ color: 'var(--color-text-muted)', maxWidth: '480px', margin: 0 }}>{loadError}</p>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
+            <Button variant="primary" onClick={() => setReloadCounter((c) => c + 1)}>
+              Retry Loading
+            </Button>
+            <Link to="/campus">
+              <Button variant="secondary">Back to Campus</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!challenge) return <NotFoundPage />;
 

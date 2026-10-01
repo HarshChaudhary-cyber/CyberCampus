@@ -1,15 +1,16 @@
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, XCircle, Award, RotateCcw, LayoutDashboard, FolderKanban, AlertCircle,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
-import { getChallenge } from '../challenges';
+import { loadChallenge, getLoadedChallenge } from '../challenges';
 import { getCorrectAnswerDisplay } from '../challenges/evaluator';
 import { Button, LinkButton } from '../components/ui/Button';
 import { HintDrawer } from '../components/ui/HintDrawer';
 import { formatScore } from '../utils/format';
 import styles from './ResultsPage.module.css';
-import type { Step, StepResponse } from '../types';
+import type { Challenge, Step, StepResponse } from '../types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,18 @@ export const ResultsPage: React.FC = () => {
   // Look up the attempt from the store (survives page refresh)
   const attempt = progress.attempts.find((a) => a.id === attemptId);
 
+  const [challenge, setChallenge] = useState<Challenge | null>(() =>
+    attempt ? (getLoadedChallenge(attempt.challengeId) ?? null) : null
+  );
+
+  useEffect(() => {
+    if (attempt?.challengeId && !challenge) {
+      loadChallenge(attempt.challengeId).then((loaded) => {
+        if (loaded) setChallenge(loaded);
+      });
+    }
+  }, [attempt?.challengeId, challenge]);
+
   // If the ID is simply invalid show a friendly error
   if (!attempt) {
     return (
@@ -76,8 +89,6 @@ export const ResultsPage: React.FC = () => {
       </div>
     );
   }
-
-  const challenge = getChallenge(attempt.challengeId);
 
   // Challenge data may theoretically be unavailable if we ever remove it,
   // but we can still show score from the stored attempt.

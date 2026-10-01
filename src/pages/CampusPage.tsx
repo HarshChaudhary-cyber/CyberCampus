@@ -9,7 +9,6 @@ import React, {
   lazy,
   Suspense,
   useState,
-  useEffect,
   useMemo,
   useCallback,
 } from 'react';
@@ -51,32 +50,7 @@ const ICON_MAP: Record<
   }>
 > = { Mail, Monitor, Network, Search, Lock };
 
-// ── OS Reduced Motion Hook ────────────────────────────────────────────────────
-
-function usePrefersReducedMotion(): boolean {
-  const [prefersReduced, setPrefersReduced] = useState<boolean>(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handler = (e: MediaQueryListEvent) => {
-      setPrefersReduced(e.matches);
-    };
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handler);
-      return () => mediaQuery.removeEventListener('change', handler);
-    } else if (mediaQuery.addListener) {
-      mediaQuery.addListener(handler);
-      return () => mediaQuery.removeListener(handler);
-    }
-  }, []);
-
-  return prefersReduced;
-}
+import { useEffectiveReducedMotion } from '../hooks/useReducedMotion';
 
 // ── 3D Scene Wrapper ──────────────────────────────────────────────────────────
 
@@ -160,8 +134,7 @@ export const CampusPage: React.FC = () => {
   const { profile, progress, updateSettings } = useCyberStore();
   const { settings } = profile;
 
-  const osReducedMotion = usePrefersReducedMotion();
-  const effectiveReducedMotion = settings.reducedMotion || osReducedMotion;
+  const effectiveReducedMotion = useEffectiveReducedMotion();
 
   // Single-probe WebGL check, cached module-wide
   const isWebGLSupported = useMemo(() => getWebGLAvailability(), []);

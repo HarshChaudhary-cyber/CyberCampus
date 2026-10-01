@@ -14,6 +14,7 @@ import type {
   Attempt,
   PortfolioEntry,
   Challenge,
+  ChallengeMetadata,
   StepResponse,
 } from '../types';
 
@@ -74,7 +75,7 @@ interface CyberCampusState {
   resetAllProgress: () => void;
 
   // Challenge actions
-  recordAttempt: (challenge: Challenge, stepResponses: StepResponse[], hintsUsed: number, retryNumber: number) => Attempt;
+  recordAttempt: (challenge: Challenge | ChallengeMetadata, stepResponses: StepResponse[], hintsUsed: number, retryNumber: number) => Attempt;
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────

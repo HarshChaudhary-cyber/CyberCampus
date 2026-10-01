@@ -116,6 +116,16 @@ export interface Challenge {
   shuffleItems?: boolean;
 }
 
+export interface ChallengeMetadata {
+  id: string;
+  roomId: RoomId;
+  difficulty: Difficulty;
+  title: string;
+  briefing: string;
+  skills: string[];
+  passThreshold: number;
+}
+
 // ── User & Progress ───────────────────────────────────────────────────────────
 
 export interface UserSettings {

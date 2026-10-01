@@ -1,0 +1,983 @@
+{
+  "metadata": {
+    "generatedAt": "2026-10-01T15:38:30.677Z",
+    "browser": "Google Chrome (Headless)",
+    "previewUrl": "http://localhost:4173",
+    "viewport": {
+      "width": 1280,
+      "height": 800,
+      "isMobile": false
+    },
+    "cachePolicy": {
+      "coldLoads": "setCacheDisabled=true, setBypassServiceWorker=true",
+      "spaNavigation": "setCacheDisabled=false, setBypassServiceWorker=false"
+    },
+    "notes": "Dist artifact sizes (raw and gzip) are computed directly from dist/ files via zlib.gzipSync. Network transfer bytes represent actual wire bytes transferred (encodedDataLength from CDP Network.loadingFinished)."
+  },
+  "distStats": {
+    "totalRawBytes": 1887229,
+    "totalGzipBytes": 546455,
+    "artifacts": [
+      {
+        "filename": "arrow-left-DB16Y_ko.js",
+        "rawBytes": 205,
+        "gzipBytes": 188
+      },
+      {
+        "filename": "building-complex-DRnFN4to.js",
+        "rawBytes": 452,
+        "gzipBytes": 283
+      },
+      {
+        "filename": "CampusPage-X45CDucK.js",
+        "rawBytes": 13689,
+        "gzipBytes": 4398
+      },
+      {
+        "filename": "CampusScene-jrKz1RbF.js",
+        "rawBytes": 944226,
+        "gzipBytes": 249720
+      },
+      {
+        "filename": "cc-df-01-BiCjXeyx.js",
+        "rawBytes": 19094,
+        "gzipBytes": 7189
+      },
+      {
+        "filename": "cc-df-02-BEMd4nXL.js",
+        "rawBytes": 30262,
+        "gzipBytes": 8819
+      },
+      {
+        "filename": "cc-df-03-OkaFHCha.js",
+        "rawBytes": 10424,
+        "gzipBytes": 4144
+      },
+      {
+        "filename": "cc-nw-01-BkzIJkiB.js",
+        "rawBytes": 15855,
+        "gzipBytes": 5636
+      },
+      {
+        "filename": "cc-nw-02-DiURLGNd.js",
+        "rawBytes": 16023,
+        "gzipBytes": 5563
+      },
+      {
+        "filename": "cc-nw-03-CJsbBd_C.js",
+        "rawBytes": 27211,
+        "gzipBytes": 6663
+      },
+      {
+        "filename": "cc-ph-01-CIxREoZz.js",
+        "rawBytes": 6091,
+        "gzipBytes": 2530
+      },
+      {
+        "filename": "cc-ph-02-GMmI81fG.js",
+        "rawBytes": 11543,
+        "gzipBytes": 4176
+      },
+      {
+        "filename": "cc-ph-03-C7JqWjNg.js",
+        "rawBytes": 15855,
+        "gzipBytes": 5585
+      },
+      {
+        "filename": "cc-pr-01-DThMa-5V.js",
+        "rawBytes": 17065,
+        "gzipBytes": 5744
+      },
+      {
+        "filename": "cc-pr-02-Ba5KQAOY.js",
+        "rawBytes": 17134,
+        "gzipBytes": 5754
+      },
+      {
+        "filename": "cc-pr-03-DNk2DIBk.js",
+        "rawBytes": 23946,
+        "gzipBytes": 7785
+      },
+      {
+        "filename": "cc-so-01-Bu6-X8K1.js",
+        "rawBytes": 17514,
+        "gzipBytes": 6542
+      },
+      {
+        "filename": "cc-so-02-Dgn35L_y.js",
+        "rawBytes": 17440,
+        "gzipBytes": 6416
+      },
+      {
+        "filename": "cc-so-03-npyCh2sx.js",
+        "rawBytes": 16822,
+        "gzipBytes": 6421
+      },
+      {
+        "filename": "ChallengePage-C3raIvsv.js",
+        "rawBytes": 131629,
+        "gzipBytes": 27958
+      },
+      {
+        "filename": "challenges-BDtKL2e_.js",
+        "rawBytes": 15261,
+        "gzipBytes": 5823
+      },
+      {
+        "filename": "circle-alert-vh5nxIu5.js",
+        "rawBytes": 315,
+        "gzipBytes": 229
+      },
+      {
+        "filename": "circle-check-YChQ0tWl.js",
+        "rawBytes": 250,
+        "gzipBytes": 216
+      },
+      {
+        "filename": "createLucideIcon-CrYAoWVo.js",
+        "rawBytes": 13146,
+        "gzipBytes": 5205
+      },
+      {
+        "filename": "DashboardPage-DblBkU7x.js",
+        "rawBytes": 11412,
+        "gzipBytes": 3504
+      },
+      {
+        "filename": "file-text-EtXGdiGb.js",
+        "rawBytes": 425,
+        "gzipBytes": 277
+      },
+      {
+        "filename": "format-DXnI8cEK.js",
+        "rawBytes": 304,
+        "gzipBytes": 230
+      },
+      {
+        "filename": "HintDrawer-BmhbeVar.js",
+        "rawBytes": 5571,
+        "gzipBytes": 2145
+      },
+      {
+        "filename": "index-DZ1QCZg9.js",
+        "rawBytes": 448118,
+        "gzipBytes": 142172
+      },
+      {
+        "filename": "monitor-LxScGtYR.js",
+        "rawBytes": 624,
+        "gzipBytes": 366
+      },
+      {
+        "filename": "NotFoundPage-DVEF7ss9.js",
+        "rawBytes": 705,
+        "gzipBytes": 408
+      },
+      {
+        "filename": "PortfolioPage-Ck6pJo6F.js",
+        "rawBytes": 6706,
+        "gzipBytes": 1785
+      },
+      {
+        "filename": "progress-BfIumZ_7.js",
+        "rawBytes": 2398,
+        "gzipBytes": 1030
+      },
+      {
+        "filename": "ResultsPage-CzviEJCa.js",
+        "rawBytes": 7945,
+        "gzipBytes": 2708
+      },
+      {
+        "filename": "RoomPage-OWDLVkVZ.js",
+        "rawBytes": 4983,
+        "gzipBytes": 2189
+      },
+      {
+        "filename": "rotate-ccw-BVxl6xHG.js",
+        "rawBytes": 240,
+        "gzipBytes": 213
+      },
+      {
+        "filename": "search-Bjvguaqb.js",
+        "rawBytes": 765,
+        "gzipBytes": 408
+      },
+      {
+        "filename": "SettingsPage-BjmrTjqd.js",
+        "rawBytes": 7313,
+        "gzipBytes": 2530
+      },
+      {
+        "filename": "stego-fixtures-CbQfDQsV.js",
+        "rawBytes": 7810,
+        "gzipBytes": 3202
+      },
+      {
+        "filename": "x-BaEc6xph.js",
+        "rawBytes": 458,
+        "gzipBytes": 301
+      }
+    ]
+  },
+  "coldLoads": {
+    "landing": {
+      "route": "/",
+      "jsCount": 2,
+      "totalTransferBytes": 148219,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/createLucideIcon-CrYAoWVo.js",
+          "pathname": "/assets/createLucideIcon-CrYAoWVo.js",
+          "filename": "createLucideIcon-CrYAoWVo.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 5577,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/index-DZ1QCZg9.js",
+          "pathname": "/assets/index-DZ1QCZg9.js",
+          "filename": "index-DZ1QCZg9.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 142642,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    },
+    "campus2D": {
+      "route": "/campus",
+      "jsCount": 8,
+      "totalTransferBytes": 162767,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/createLucideIcon-CrYAoWVo.js",
+          "pathname": "/assets/createLucideIcon-CrYAoWVo.js",
+          "filename": "createLucideIcon-CrYAoWVo.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 5577,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/index-DZ1QCZg9.js",
+          "pathname": "/assets/index-DZ1QCZg9.js",
+          "filename": "index-DZ1QCZg9.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 142642,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/monitor-LxScGtYR.js",
+          "pathname": "/assets/monitor-LxScGtYR.js",
+          "filename": "monitor-LxScGtYR.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 945,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/building-complex-DRnFN4to.js",
+          "pathname": "/assets/building-complex-DRnFN4to.js",
+          "filename": "building-complex-DRnFN4to.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 773,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/search-Bjvguaqb.js",
+          "pathname": "/assets/search-Bjvguaqb.js",
+          "filename": "search-Bjvguaqb.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 1086,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/CampusPage-X45CDucK.js",
+          "pathname": "/assets/CampusPage-X45CDucK.js",
+          "filename": "CampusPage-X45CDucK.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 4770,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/x-BaEc6xph.js",
+          "pathname": "/assets/x-BaEc6xph.js",
+          "filename": "x-BaEc6xph.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 779,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/challenges-BDtKL2e_.js",
+          "pathname": "/assets/challenges-BDtKL2e_.js",
+          "filename": "challenges-BDtKL2e_.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 6195,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    },
+    "challenge": {
+      "route": "/challenge/cc-ph-01",
+      "jsCount": 14,
+      "totalTransferBytes": 197111,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/createLucideIcon-CrYAoWVo.js",
+          "pathname": "/assets/createLucideIcon-CrYAoWVo.js",
+          "filename": "createLucideIcon-CrYAoWVo.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 5577,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/index-DZ1QCZg9.js",
+          "pathname": "/assets/index-DZ1QCZg9.js",
+          "filename": "index-DZ1QCZg9.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 142642,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/arrow-left-DB16Y_ko.js",
+          "pathname": "/assets/arrow-left-DB16Y_ko.js",
+          "filename": "arrow-left-DB16Y_ko.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 526,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/building-complex-DRnFN4to.js",
+          "pathname": "/assets/building-complex-DRnFN4to.js",
+          "filename": "building-complex-DRnFN4to.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 773,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/circle-alert-vh5nxIu5.js",
+          "pathname": "/assets/circle-alert-vh5nxIu5.js",
+          "filename": "circle-alert-vh5nxIu5.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 636,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/HintDrawer-BmhbeVar.js",
+          "pathname": "/assets/HintDrawer-BmhbeVar.js",
+          "filename": "HintDrawer-BmhbeVar.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 2515,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/circle-check-YChQ0tWl.js",
+          "pathname": "/assets/circle-check-YChQ0tWl.js",
+          "filename": "circle-check-YChQ0tWl.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 571,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/file-text-EtXGdiGb.js",
+          "pathname": "/assets/file-text-EtXGdiGb.js",
+          "filename": "file-text-EtXGdiGb.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 746,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/search-Bjvguaqb.js",
+          "pathname": "/assets/search-Bjvguaqb.js",
+          "filename": "search-Bjvguaqb.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 1086,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/ChallengePage-C3raIvsv.js",
+          "pathname": "/assets/ChallengePage-C3raIvsv.js",
+          "filename": "ChallengePage-C3raIvsv.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 28346,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/NotFoundPage-DVEF7ss9.js",
+          "pathname": "/assets/NotFoundPage-DVEF7ss9.js",
+          "filename": "NotFoundPage-DVEF7ss9.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 1026,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/challenges-BDtKL2e_.js",
+          "pathname": "/assets/challenges-BDtKL2e_.js",
+          "filename": "challenges-BDtKL2e_.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 6195,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/stego-fixtures-CbQfDQsV.js",
+          "pathname": "/assets/stego-fixtures-CbQfDQsV.js",
+          "filename": "stego-fixtures-CbQfDQsV.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 3572,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/cc-ph-01-CIxREoZz.js",
+          "pathname": "/assets/cc-ph-01-CIxREoZz.js",
+          "filename": "cc-ph-01-CIxREoZz.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 2900,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    },
+    "campus3D": {
+      "route": "/campus",
+      "jsCount": 10,
+      "totalTransferBytes": 413615,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/createLucideIcon-CrYAoWVo.js",
+          "pathname": "/assets/createLucideIcon-CrYAoWVo.js",
+          "filename": "createLucideIcon-CrYAoWVo.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 5577,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/index-DZ1QCZg9.js",
+          "pathname": "/assets/index-DZ1QCZg9.js",
+          "filename": "index-DZ1QCZg9.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 142642,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/monitor-LxScGtYR.js",
+          "pathname": "/assets/monitor-LxScGtYR.js",
+          "filename": "monitor-LxScGtYR.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 945,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/building-complex-DRnFN4to.js",
+          "pathname": "/assets/building-complex-DRnFN4to.js",
+          "filename": "building-complex-DRnFN4to.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 773,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/search-Bjvguaqb.js",
+          "pathname": "/assets/search-Bjvguaqb.js",
+          "filename": "search-Bjvguaqb.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 1086,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/x-BaEc6xph.js",
+          "pathname": "/assets/x-BaEc6xph.js",
+          "filename": "x-BaEc6xph.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 779,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/CampusPage-X45CDucK.js",
+          "pathname": "/assets/CampusPage-X45CDucK.js",
+          "filename": "CampusPage-X45CDucK.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 4770,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/challenges-BDtKL2e_.js",
+          "pathname": "/assets/challenges-BDtKL2e_.js",
+          "filename": "challenges-BDtKL2e_.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 6195,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/rotate-ccw-BVxl6xHG.js",
+          "pathname": "/assets/rotate-ccw-BVxl6xHG.js",
+          "filename": "rotate-ccw-BVxl6xHG.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": null,
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 561,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/CampusScene-jrKz1RbF.js",
+          "pathname": "/assets/CampusScene-jrKz1RbF.js",
+          "filename": "CampusScene-jrKz1RbF.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 250287,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    }
+  },
+  "spaNavigation": [
+    {
+      "step": "Landing Page Load",
+      "route": "/",
+      "totalChunksInStep": 2,
+      "newChunks": [
+        "createLucideIcon-CrYAoWVo.js",
+        "index-DZ1QCZg9.js"
+      ],
+      "transferBytes": 148219,
+      "requests": [
+        {
+          "filename": "createLucideIcon-CrYAoWVo.js",
+          "encodedDataLength": 5577,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "index-DZ1QCZg9.js",
+          "encodedDataLength": 142642,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        }
+      ]
+    },
+    {
+      "step": "Navigate Landing -> Campus",
+      "route": "/campus",
+      "totalChunksInStep": 8,
+      "newChunks": [
+        "monitor-LxScGtYR.js",
+        "CampusPage-X45CDucK.js",
+        "building-complex-DRnFN4to.js",
+        "x-BaEc6xph.js",
+        "search-Bjvguaqb.js",
+        "challenges-BDtKL2e_.js",
+        "rotate-ccw-BVxl6xHG.js",
+        "CampusScene-jrKz1RbF.js"
+      ],
+      "transferBytes": 265396,
+      "requests": [
+        {
+          "filename": "monitor-LxScGtYR.js",
+          "encodedDataLength": 945,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "CampusPage-X45CDucK.js",
+          "encodedDataLength": 4770,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "building-complex-DRnFN4to.js",
+          "encodedDataLength": 773,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "x-BaEc6xph.js",
+          "encodedDataLength": 779,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "search-Bjvguaqb.js",
+          "encodedDataLength": 1086,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "challenges-BDtKL2e_.js",
+          "encodedDataLength": 6195,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "rotate-ccw-BVxl6xHG.js",
+          "encodedDataLength": 561,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "CampusScene-jrKz1RbF.js",
+          "encodedDataLength": 250287,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        }
+      ]
+    },
+    {
+      "step": "Navigate Campus -> Room",
+      "route": "/room/phishing",
+      "totalChunksInStep": 5,
+      "newChunks": [
+        "arrow-left-DB16Y_ko.js",
+        "circle-check-YChQ0tWl.js",
+        "NotFoundPage-DVEF7ss9.js",
+        "circle-alert-vh5nxIu5.js",
+        "RoomPage-OWDLVkVZ.js"
+      ],
+      "transferBytes": 5318,
+      "requests": [
+        {
+          "filename": "arrow-left-DB16Y_ko.js",
+          "encodedDataLength": 526,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "circle-check-YChQ0tWl.js",
+          "encodedDataLength": 571,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "NotFoundPage-DVEF7ss9.js",
+          "encodedDataLength": 1026,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "circle-alert-vh5nxIu5.js",
+          "encodedDataLength": 636,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "RoomPage-OWDLVkVZ.js",
+          "encodedDataLength": 2559,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        }
+      ]
+    },
+    {
+      "step": "Navigate Room -> Challenge",
+      "route": "/challenge/cc-ph-01",
+      "totalChunksInStep": 5,
+      "newChunks": [
+        "file-text-EtXGdiGb.js",
+        "HintDrawer-BmhbeVar.js",
+        "stego-fixtures-CbQfDQsV.js",
+        "ChallengePage-C3raIvsv.js",
+        "cc-ph-01-CIxREoZz.js"
+      ],
+      "transferBytes": 38079,
+      "requests": [
+        {
+          "filename": "file-text-EtXGdiGb.js",
+          "encodedDataLength": 746,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "HintDrawer-BmhbeVar.js",
+          "encodedDataLength": 2515,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "stego-fixtures-CbQfDQsV.js",
+          "encodedDataLength": 3572,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "ChallengePage-C3raIvsv.js",
+          "encodedDataLength": 28346,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        },
+        {
+          "filename": "cc-ph-01-CIxREoZz.js",
+          "encodedDataLength": 2900,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        }
+      ]
+    }
+  ]
+}

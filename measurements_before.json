@@ -1,0 +1,199 @@
+{
+  "metadata": {
+    "generatedAt": "2026-10-01T15:15:55.966Z",
+    "browser": "Google Chrome (Headless)",
+    "previewUrl": "http://localhost:4173",
+    "viewport": {
+      "width": 1280,
+      "height": 800,
+      "isMobile": false
+    },
+    "cachePolicy": {
+      "coldLoads": "setCacheDisabled=true, setBypassServiceWorker=true",
+      "spaNavigation": "setCacheDisabled=false, setBypassServiceWorker=false"
+    },
+    "notes": "Dist artifact sizes (raw and gzip) are computed directly from dist/ files via zlib.gzipSync. Network transfer bytes represent actual wire bytes transferred (encodedDataLength from CDP Network.loadingFinished)."
+  },
+  "distStats": {
+    "totalRawBytes": 1863114,
+    "totalGzipBytes": 517497,
+    "artifacts": [
+      {
+        "filename": "CampusScene-DZ7OOa5D.js",
+        "rawBytes": 944068,
+        "gzipBytes": 249621
+      },
+      {
+        "filename": "index-BPGhuztm.js",
+        "rawBytes": 919046,
+        "gzipBytes": 267876
+      }
+    ]
+  },
+  "coldLoads": {
+    "landing": {
+      "route": "/",
+      "jsCount": 1,
+      "totalTransferBytes": 268448,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/index-BPGhuztm.js",
+          "pathname": "/assets/index-BPGhuztm.js",
+          "filename": "index-BPGhuztm.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 268448,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    },
+    "campus2D": {
+      "route": "/campus",
+      "jsCount": 1,
+      "totalTransferBytes": 268448,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/index-BPGhuztm.js",
+          "pathname": "/assets/index-BPGhuztm.js",
+          "filename": "index-BPGhuztm.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 268448,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    },
+    "challenge": {
+      "route": "/challenge/cc-ph-01",
+      "jsCount": 1,
+      "totalTransferBytes": 268448,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/index-BPGhuztm.js",
+          "pathname": "/assets/index-BPGhuztm.js",
+          "filename": "index-BPGhuztm.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 268448,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    },
+    "campus3D": {
+      "route": "/campus",
+      "jsCount": 2,
+      "totalTransferBytes": 518636,
+      "requests": [
+        {
+          "url": "http://localhost:4173/assets/index-BPGhuztm.js",
+          "pathname": "/assets/index-BPGhuztm.js",
+          "filename": "index-BPGhuztm.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 268448,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        },
+        {
+          "url": "http://localhost:4173/assets/CampusScene-DZ7OOa5D.js",
+          "pathname": "/assets/CampusScene-DZ7OOa5D.js",
+          "filename": "CampusScene-DZ7OOa5D.js",
+          "status": 200,
+          "resourceType": "Script",
+          "mimeType": "text/javascript",
+          "contentEncoding": "gzip",
+          "fromDiskCache": false,
+          "fromMemoryCache": false,
+          "fromServiceWorker": false,
+          "encodedDataLength": 250188,
+          "failed": false,
+          "errorText": null,
+          "incomplete": false
+        }
+      ],
+      "failedOrIncompleteCount": 0
+    }
+  },
+  "spaNavigation": [
+    {
+      "step": "Landing Page Load",
+      "route": "/",
+      "totalChunksInStep": 1,
+      "newChunks": [
+        "index-BPGhuztm.js"
+      ],
+      "transferBytes": 268448,
+      "requests": [
+        {
+          "filename": "index-BPGhuztm.js",
+          "encodedDataLength": 268448,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        }
+      ]
+    },
+    {
+      "step": "Navigate Landing -> Campus",
+      "route": "/campus",
+      "totalChunksInStep": 1,
+      "newChunks": [
+        "CampusScene-DZ7OOa5D.js"
+      ],
+      "transferBytes": 250188,
+      "requests": [
+        {
+          "filename": "CampusScene-DZ7OOa5D.js",
+          "encodedDataLength": 250188,
+          "fromDiskCache": false,
+          "fromMemoryCache": false
+        }
+      ]
+    },
+    {
+      "step": "Navigate Campus -> Room",
+      "route": "/room/phishing",
+      "totalChunksInStep": 0,
+      "newChunks": [],
+      "transferBytes": 0,
+      "requests": []
+    },
+    {
+      "step": "Navigate Room -> Challenge",
+      "route": "/challenge/cc-ph-01",
+      "totalChunksInStep": 0,
+      "newChunks": [],
+      "transferBytes": 0,
+      "requests": []
+    }
+  ]
+}

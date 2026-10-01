@@ -2,7 +2,7 @@
 // CyberCampus — Progress & Recommendation Utilities
 // ============================================================
 
-import type { Attempt, Challenge, PortfolioEntry } from '../types';
+import type { Attempt, PortfolioEntry } from '../types';
 
 /**
  * Returns the highest-scoring attempt for a given challenge.
@@ -32,11 +32,11 @@ export function getBestAttemptForChallenge(
  * Otherwise recommend the first uncompleted live challenge in curriculum order.
  * Returns null if all live challenges are completed or if the live challenge list is empty.
  */
-export function getDeterministicRecommendation(
+export function getDeterministicRecommendation<T extends { id: string }>(
   attempts: Attempt[],
   portfolio: PortfolioEntry[],
-  liveChallenges: Challenge[]
-): { recommendedChallenge: Challenge | null; isResume: boolean } {
+  liveChallenges: T[]
+): { recommendedChallenge: T | null; isResume: boolean } {
   if (liveChallenges.length === 0) {
     return { recommendedChallenge: null, isResume: false };
   }
@@ -81,9 +81,9 @@ export function getDeterministicRecommendation(
 /**
  * Calculates progress statistics safely handling empty registries.
  */
-export function calculateProgressStats(
+export function calculateProgressStats<T extends { id: string }>(
   portfolio: PortfolioEntry[],
-  liveChallenges: Challenge[]
+  liveChallenges: T[]
 ) {
   const totalChallenges = liveChallenges.length;
   const liveChallengeIds = new Set(liveChallenges.map((c) => c.id));

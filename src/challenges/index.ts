@@ -1,126 +1,47 @@
 // ============================================================
-// CyberCampus — Challenge Registry
-// Single source of truth for all challenge and room data.
+// CyberCampus — Challenge Registry & Metadata Facade
+// Lightweight exports for navigation, dashboard, and portfolio.
+// Heavy definitions are loaded dynamically via loader.ts.
 // ============================================================
 
-import type { Challenge, Room } from '../types';
-import { challengeCC_PH_01 } from './data/cc-ph-01';
-import { challengeCC_PH_02 } from './data/cc-ph-02';
-import { challengeCC_PH_03 } from './data/cc-ph-03';
-import { challengeCC_SO_01 } from './data/cc-so-01';
-import { challengeCC_SO_02 } from './data/cc-so-02';
-import { challengeCC_SO_03 } from './data/cc-so-03';
-import { challengeCC_NW_01 } from './data/cc-nw-01';
-import { challengeCC_NW_02 } from './data/cc-nw-02';
-import { challengeCC_NW_03 } from './data/cc-nw-03';
-import { challengeCC_DF_01 } from './data/cc-df-01';
-import { challengeCC_DF_02 } from './data/cc-df-02';
-import { challengeCC_DF_03 } from './data/cc-df-03';
-import { challengeCC_PR_01 } from './data/cc-pr-01';
-import { challengeCC_PR_02 } from './data/cc-pr-02';
-import { challengeCC_PR_03 } from './data/cc-pr-03';
+export * from './metadata';
+export * from './loader';
 
-// ── Challenge registry ────────────────────────────────────────────────────────
+import {
+  ALL_CHALLENGES_METADATA,
+  CHALLENGE_METADATA_MAP,
+  type ChallengeMetadata,
+} from './metadata';
+import { getLoadedChallenge } from './loader';
+import type { Challenge } from '../types';
 
-export const ALL_CHALLENGES: Challenge[] = [
-  challengeCC_PH_01,
-  challengeCC_PH_02,
-  challengeCC_PH_03,
-  challengeCC_SO_01,
-  challengeCC_SO_02,
-  challengeCC_SO_03,
-  challengeCC_NW_01,
-  challengeCC_NW_02,
-  challengeCC_NW_03,
-  challengeCC_DF_01,
-  challengeCC_DF_02,
-  challengeCC_DF_03,
-  challengeCC_PR_01,
-  challengeCC_PR_02,
-  challengeCC_PR_03,
-];
+/**
+ * All live challenges metadata in curriculum order.
+ */
+export const ALL_CHALLENGES: ChallengeMetadata[] = ALL_CHALLENGES_METADATA;
 
-export const CHALLENGE_MAP: Record<string, Challenge> = Object.fromEntries(
-  ALL_CHALLENGES.map((c) => [c.id, c])
+/**
+ * Dynamic map that returns full Challenge if loaded in memory,
+ * or lightweight ChallengeMetadata if not yet loaded.
+ */
+export const CHALLENGE_MAP: Record<string, ChallengeMetadata | Challenge> = new Proxy(
+  CHALLENGE_METADATA_MAP as Record<string, ChallengeMetadata | Challenge>,
+  {
+    get(target, prop: string) {
+      if (typeof prop === 'string') {
+        const full = getLoadedChallenge(prop);
+        if (full) return full;
+      }
+      return target[prop];
+    },
+  }
 );
 
+/**
+ * Returns full Challenge if loaded in memory, or metadata cast as Challenge fallback.
+ */
 export function getChallenge(id: string): Challenge | undefined {
-  return CHALLENGE_MAP[id];
+  const full = getLoadedChallenge(id);
+  if (full) return full;
+  return CHALLENGE_METADATA_MAP[id] as unknown as Challenge | undefined;
 }
-
-// ── Room registry ─────────────────────────────────────────────────────────────
-
-export const ROOMS: Room[] = [
-  {
-    id: 'phishing',
-    title: 'Phishing Defense',
-    description:
-      'Identify deceptive emails, spoofed domains, and social engineering tactics before they cause real damage.',
-    icon: 'Mail',
-    accentClass: 'room-phishing',
-    challengeIds: ['cc-ph-01', 'cc-ph-02', 'cc-ph-03'],
-  },
-  {
-    id: 'secops',
-    title: 'Security Operations',
-    description:
-      'Triage alerts, investigate suspicious logins, and piece together incident response timelines.',
-    icon: 'Monitor',
-    accentClass: 'room-secops',
-    challengeIds: ['cc-so-01', 'cc-so-02', 'cc-so-03'],
-  },
-  {
-    id: 'network',
-    title: 'Network Security',
-    description:
-      'Audit firewall rules, analyse open ports, and detect hidden exfiltration in packet traces.',
-    icon: 'Network',
-    accentClass: 'room-network',
-    challengeIds: ['cc-nw-01', 'cc-nw-02', 'cc-nw-03'],
-  },
-  {
-    id: 'forensics',
-    title: 'Digital Forensics',
-    description:
-      'Recover deleted files, reconstruct browser history, and uncover data hidden in plain sight.',
-    icon: 'Search',
-    accentClass: 'room-forensics',
-    challengeIds: ['cc-df-01', 'cc-df-02', 'cc-df-03'],
-  },
-  {
-    id: 'privacy',
-    title: 'Privacy & Account Security',
-    description:
-      'Audit passwords, spot MFA attacks, and identify apps that collect more data than they admit.',
-    icon: 'Lock',
-    accentClass: 'room-privacy',
-    challengeIds: ['cc-pr-01', 'cc-pr-02', 'cc-pr-03'],
-  },
-];
-
-export const ROOM_MAP: Record<string, Room> = Object.fromEntries(
-  ROOMS.map((r) => [r.id, r])
-);
-
-export function getRoom(id: string): Room | undefined {
-  return ROOM_MAP[id];
-}
-
-/** IDs of challenges that are fully built and playable */
-export const LIVE_CHALLENGE_IDS = new Set([
-  'cc-ph-01',
-  'cc-ph-02',
-  'cc-ph-03',
-  'cc-so-01',
-  'cc-so-02',
-  'cc-so-03',
-  'cc-nw-01',
-  'cc-nw-02',
-  'cc-nw-03',
-  'cc-df-01',
-  'cc-df-02',
-  'cc-df-03',
-  'cc-pr-01',
-  'cc-pr-02',
-  'cc-pr-03',
-]);

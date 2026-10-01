@@ -173,7 +173,104 @@ The following visual evidence was captured from real Google Chrome executions an
 
 ---
 
+## 4. Loading Performance & Global Reduced Motion (Task 9B)
+
+### A. Performance Measurement Methodology
+- **Automation Client**: Native, reproducible Chrome DevTools Protocol client (`scripts/cdp_browser.mjs` and `scripts/measure_performance.mjs`).
+- **Browser & Environment**: Google Chrome Headless, Viewport 1280×800.
+- **Dist Artifact vs Transfer Measurement**:
+  - Dist artifact sizes (raw bytes and gzip compressed bytes) were computed directly from `dist/assets/*.js` using Node.js `zlib.gzipSync`.
+  - Network transfer bytes represent actual wire bytes transferred (`encodedDataLength` from CDP `Network.loadingFinished`) on production preview (`http://localhost:4173`).
+- **Two Scenarios Measured**:
+  1. **Cold Direct Loads**: Fresh isolated browser profile, HTTP cache disabled (`setCacheDisabled(true)`), service workers bypassed (`setBypassServiceWorker(true)`), profile settings pre-injected via `addScriptToEvaluateOnNewDocument` before app scripts evaluate.
+  2. **SPA In-Session Navigation**: Single browser instance starting at `/`, caching enabled (`setCacheDisabled(false)`), navigating via DOM link clicks (`a[href="/campus"]`, `a[href="/room/phishing"]`, `a[href="/challenge/cc-ph-01"]`). Newly requested chunks tracked separately from cached requests.
+
+---
+
+### B. Before vs. After Measurement Results
+
+#### 1. Dist JS Artifact Sizes
+| Bundle Artifact | Before Optimization | After Optimization (Task 9B) | Change |
+|---|---|---|---|
+| **Main App Entry** (`index-*.js`) | 919,046 B (267,876 B gzip) | **448,118 B (142,172 B gzip)** | **-51.2% raw (-46.9% gzip)** |
+| **3D Campus Scene** (`CampusScene-*.js`) | 944,068 B (249,621 B gzip) | **944,226 B (249,720 B gzip)** | Isolated on-demand |
+| **Route Chunks** (Campus, Challenge, Dashboard, Portfolio, Results, Settings) | 0 B (monolithic inside index) | **183,382 B (48,348 B gzip total)** | Code-split on-demand |
+| **Challenge Chunks** (15 individual challenges) | 0 B (monolithic inside index) | **264,284 B (89,019 B gzip total)** | Code-split on-demand |
+| **Total Dist JS Artifacts** | 1,863,114 B (517,497 B gzip) | 1,887,229 B (546,455 B gzip) | Granular code-splitting across 40 chunks |
+
+#### 2. Cold Direct Load Network Transfers
+| Route Scenario | Before Optimization | After Optimization (Task 9B) | Wire Transfer Reduction |
+|---|---|---|---|
+| **Landing Page** (`/`) | 268,448 bytes (1 chunk) | **148,219 bytes (2 chunks)** | **-44.8% transfer bytes** |
+| **2D Campus** (`/campus`, low-perf mode) | 268,448 bytes (1 chunk) | **162,767 bytes (8 chunks)** | **-39.4% transfer bytes** |
+| **3D Campus** (`/campus`, high-perf mode) | 518,636 bytes (2 chunks) | **413,615 bytes (10 chunks)** | **-20.2% transfer bytes** |
+| **Challenge** (`/challenge/cc-ph-01`) | 268,448 bytes (1 chunk) | **197,111 bytes (14 chunks)** | **-26.6% transfer bytes** |
+
+#### 3. Verification of Zero-Unnecessary-Downloads
+- **Cold 2D Low-Performance Campus**: Verified that `CampusScene-*.js` and Three.js dependencies are **never requested** when 2D mode / low performance mode is active.
+- **Cold Landing Page**: Verified that challenge evidence chunks (including heavy steganography fixtures and packet trace data) and secondary page chunks are **never requested** on `/`.
+
+#### 4. SPA In-Session Navigation (Caching Enabled)
+| Step | Action | New Chunks Requested | Network Transfer Bytes | Notes |
+|---|---|---|---|---|
+| **Step 1** | Load Landing Page (`/`) | 2 chunks (`index`, `createLucideIcon`) | 148,219 B | Initial landing payload |
+| **Step 2** | Click "Enter Campus" (`/campus`) | 8 chunks (`CampusPage`, `CampusScene`, icons) | 265,396 B | Loads 3D campus on first visit |
+| **Step 3** | Click Room link (`/room/phishing`) | 5 chunks (`RoomPage`, icons) | 5,318 B | Lightweight route chunk |
+| **Step 4** | Click Challenge link (`/challenge/cc-ph-01`) | 5 chunks (`ChallengePage`, `cc-ph-01`, `HintDrawer`) | 38,079 B | Only `cc-ph-01` evidence downloaded |
+
+---
+
+### C. Architecture Implementation Details
+1. **Lightweight Metadata Isolation**:
+   - Extracted metadata registry to `src/challenges/metadata.ts` containing titles, rooms, difficulties, briefings, skills, and passThresholds for all 15 challenges.
+   - `assertMetadataMatchesDefinition` consistency verification suite in `src/test/metadata-consistency.test.ts` ensuring metadata and definition fields remain in perfect sync.
+2. **Explicit Vite Dynamic Imports**:
+   - `src/challenges/loader.ts` implements `CHALLENGE_LOADERS` mapping with explicit static-string dynamic imports (`import('./data/cc-ph-01')`), enabling Rollup/Vite to generate independent split chunks per challenge.
+   - In-memory challenge definition cache ensures each challenge is fetched over the network at most once.
+3. **Route-Level Code Splitting**:
+   - `src/App.tsx` lazy-loads `CampusPage`, `RoomPage`, `ChallengePage`, `DashboardPage`, `PortfolioPage`, `ResultsPage`, `SettingsPage`, and `NotFoundPage`.
+   - `LandingPage` remains immediately available for instant first render.
+   - Accessible suspense fallback with `role="status"` and `aria-live="polite"`.
+   - `RouteErrorBoundary` catches chunk fetch errors and displays an honest "Reload Page" recovery button.
+4. **Global Reduced Motion System**:
+   - Implemented `useEffectiveReducedMotion()` hook combining store setting (`profile.settings.reducedMotion`) and OS media query (`prefers-reduced-motion: reduce`) with active `change` listeners.
+   - Applied across `App.tsx` Framer Motion route transitions to eliminate opacity and translation animations when reduced motion is preferred.
+   - Applied across `CampusPage.tsx` to disable Three.js camera damping and hover animations.
+
+---
+
+## 5. Summary of Automated Verification Results
+- **Vitest Unit & Integration Tests**: 569 / 569 passed across 20 test files (`npm run test:run`).
+- **TypeScript Strict Compilation**: Zero errors (`npx tsc -b`).
+- **ESLint Quality Check**: Zero errors, zero warnings (`npm run lint`).
+- **Production Build**: Built in 4.69s (`npm run build`).
+- **CDP Performance Measurement**: Fully verified reproducible scripts in repository (`measurements_before.json` and `measurements_after.json`).
+
+---
+
+## 6. Artifacts and Browser Evidence
+
+The following visual evidence was captured from real Google Chrome executions and saved to the project artifact directory:
+- `task9a_dash_empty_desktop.png`: Empty state dashboard at 1280×800 with "Begin Your Cybersecurity Training".
+- `task9a_dash_empty_mobile.png`: Empty state dashboard at 390×844 with no horizontal overflow.
+- `task9a_portfolio_empty.png`: Empty state portfolio with local-storage disclosure.
+- `task9a_settings_save_feedback.png`: Settings page with visible label and accessible save confirmation.
+- `task9a_dash_populated_desktop.png`: Populated dashboard with stats, 5 room progress bars, and recommendation.
+- `task9a_portfolio_populated_desktop.png`: Populated portfolio separating completed and in-progress challenges.
+- `task9a_results_review_page.png`: Results review page accessed via Portfolio Review Results link.
+- `task9a_after_reset_settings.png`: Settings after confirmed reset showing preserved display name.
+- `campus_desktop.png` & `campus_mobile.png`: 3D campus rendering at desktop (1280×800) and mobile (375×667).
+- `panel_privacy.png` & `panel_secops.png`: Building selection HTML detail panels.
+- `journey_ph01_results.png`: Room 1 phishing assessment results (100/100 Passed).
+- `journey_so03_results.png`: Room 2 attack chain reconstruction results (100/100 Passed).
+- `journey_nw02_results.png`: Room 3 firewall rule audit results (100/100 Passed).
+- `journey_df03_results.png`: Room 4 steganography detection results (100/100 Passed).
+- `journey_pr03_results.png`: Room 5 privacy minimisation audit results (100/100 Passed).
+
+---
+
 ## 7. Remaining Limitations
 
 - **Browser Audio**: Interaction and ambient audio remain unimplemented; audio settings controls remain hidden until sound assets and an audio engine are added.
 - **Client-Side Storage**: All progress is bound to the local browser profile; clearing browser data clears progress unless exported/imported in a future release.
+
