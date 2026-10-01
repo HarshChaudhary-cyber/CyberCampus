@@ -4,8 +4,19 @@ CyberCampus is an interactive cybersecurity learning platform featuring simulate
 
 ## Project Status
 
-> **Status:** Challenge content complete; 3D campus and final release validation still pending.
+> **Status:** Challenge content complete; interactive 3D campus navigation active with accessible 2D fallback.
 > All 15 challenges across all 5 rooms are fully implemented, registered as live, and playable locally with zero external network dependencies.
+
+## Campus Architecture & Wayfinding
+
+The campus page (`/campus`) provides an interactive wayfinding experience for all 5 security domains:
+
+- **Accessible Room Navigation**: All five room links (*Phishing Defense*, *Security Operations*, *Network Security*, *Digital Forensics*, and *Privacy & Account Security*) remain in the DOM within semantic `<nav>` landmarks, fully accessible to assistive technology and keyboard navigation in both 3D and 2D modes. Focusable links are never placed inside `aria-hidden` ancestors.
+- **Building Selection & Detail Panel**: Clicking a building selects that room and displays an accessible HTML room details panel with its title, description, real-time completion count (from saved progress), and an "Enter Room" link routing to `/room/:roomId`.
+- **Drag vs. Click Distinction**: Pointer movements exceeding 5px are identified as camera drag/orbit interactions, preventing accidental room activation when dragging ends over a building.
+- **Motion & Reduced-Motion Support**: Respects both user profile settings (`profile.settings.reducedMotion`) and OS preferences (`prefers-reduced-motion`). When reduced motion is active, the camera remains static, hover float/scaling is disabled, stale lifted building positions are immediately cleared, and CSS shimmer/transitions are suppressed.
+- **Camera Controls & Demand Rendering**: Uses demand rendering (`frameloop="demand"`) to avoid continuous GPU/CPU rendering when idle. Orbit controls are bounded with auto-rotation disabled. An accessible **"Reset View"** button restores the initial camera position and orbit target.
+- **Reliable WebGL Fallback & Recovery**: Features single-probe WebGL availability detection with context cleanup via `WEBGL_lose_context`. A React `CampusErrorBoundary` catches runtime rendering and dynamic import failures, while WebGL context loss events automatically recover to functional 2D navigation with an explanatory notice and safe retry option. Low-performance mode avoids mounting or loading Three.js.
 
 ## Routing & URL Conventions
 
@@ -14,7 +25,7 @@ The application follows strict route hierarchy conventions:
 | Route Path | Description | Example URL |
 |---|---|---|
 | `/` | Landing page | `http://localhost:5173/` |
-| `/campus` | 2D Interactive Campus Map (5 rooms) | `http://localhost:5173/campus` |
+| `/campus` | Interactive Campus Map (3D Scene & 2D Accessible Navigation) | `http://localhost:5173/campus` |
 | `/room/:roomId` | Room Lobby (e.g. Phishing Defense, Privacy) | `http://localhost:5173/room/privacy` |
 | `/challenge/:challengeId` | Challenge Runner | `http://localhost:5173/challenge/cc-pr-03` |
 | `/results/:attemptId` | Results View (keyed by unique Attempt ID) | `http://localhost:5173/results/att-1727539200000-abcd` |

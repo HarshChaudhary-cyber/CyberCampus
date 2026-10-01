@@ -1,7 +1,7 @@
 // ============================================================
 // CyberCampus — 3D Campus Scene
 // Built with @react-three/fiber (R3F) + @react-three/drei.
-// Lazy-loaded; never imported on landing page bundle.
+// Lazy-loaded; demand-rendered; fully accessible.
 // ============================================================
 
 import React, {
@@ -9,18 +9,21 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useEffect,
   Suspense,
 } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Html, OrbitControls, PerspectiveCamera, Grid } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
-import { useNavigate } from 'react-router-dom';
+import { RotateCcw } from 'lucide-react';
 import { ROOM_CONFIGS, type RoomConfig } from './roomConfig';
 import { LIVE_CHALLENGE_IDS } from '../challenges';
 import { useCyberStore } from '../store';
+import { isDragMovement } from './campusUtils';
 import styles from './CampusScene.module.css';
 
-// ── Colour helpers ────────────────────────────────────────────────────────────
+// ── Color helpers ────────────────────────────────────────────────────────────
 
 function hexToThreeColor(hex: string): THREE.Color {
   return new THREE.Color(hex);
@@ -33,6 +36,8 @@ interface BuildingProps {
   passedCount: number;
   isLive: boolean;
   reducedMotion: boolean;
+  isSelected: boolean;
+  onSelect: (roomId: string) => void;
 }
 
 const Building: React.FC<BuildingProps> = ({
@@ -40,52 +45,110 @@ const Building: React.FC<BuildingProps> = ({
   passedCount,
   isLive,
   reducedMotion,
+  isSelected,
+  onSelect,
 }) => {
-  const navigate = useNavigate();
   const meshRef = useRef<THREE.Mesh>(null!);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
   const [hovered, setHovered] = useState(false);
-  const [clicked, setClicked] = useState(false);
+  const { invalidate } = useThree();
   const color = useMemo(() => hexToThreeColor(config.accent), [config.accent]);
 
   const w = 2.4;
   const d = 2.4;
   const h = config.buildingHeight;
 
-  // Hover animation: gentle float
+  // Restore ground position immediately when reduced motion becomes active
+  useEffect(() => {
+    if (reducedMotion && meshRef.current) {
+      meshRef.current.position.y = 0;
+      invalidate();
+    }
+  }, [reducedMotion, invalidate]);
+
+  // Clean up cursor when unmounting
+  useEffect(() => {
+    return () => {
+      if (hovered) {
+        document.body.style.cursor = '';
+      }
+    };
+  }, [hovered]);
+
+  // Smooth hover float with demand rendering (disabled under reduced motion)
   useFrame((_, delta) => {
     if (reducedMotion || !meshRef.current) return;
     const target = hovered ? 0.25 : 0;
-    meshRef.current.position.y +=
-      (target - meshRef.current.position.y) * Math.min(delta * 6, 1);
+    const diff = target - meshRef.current.position.y;
+    if (Math.abs(diff) > 0.001) {
+      meshRef.current.position.y += diff * Math.min(delta * 10, 1);
+      invalidate();
+    } else if (meshRef.current.position.y !== target) {
+      meshRef.current.position.y = target;
+      invalidate();
+    }
   });
 
-  const handleClick = useCallback(() => {
+  const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (!isLive) return;
-    setClicked(true);
-    setTimeout(() => setClicked(false), 300);
-    navigate(`/room/${config.id}`);
-  }, [isLive, navigate, config.id]);
+    pointerDownPos.current = { x: e.clientX, y: e.clientY };
+  }, [isLive]);
+
+  const handleClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
+      if (!isLive) return;
+      if (pointerDownPos.current) {
+        const wasDrag = isDragMovement(
+          pointerDownPos.current.x,
+          pointerDownPos.current.y,
+          e.clientX,
+          e.clientY
+        );
+        pointerDownPos.current = null;
+        // Distinguish click from camera drag (> 5px is a drag, not a selection)
+        if (wasDrag) {
+          return;
+        }
+      } else {
+        // Pointer down happened outside this mesh (e.g. drag released over building)
+        return;
+      }
+
+      onSelect(config.id);
+      invalidate();
+    },
+    [isLive, onSelect, config.id, invalidate]
+  );
 
   const opacity = isLive ? 1.0 : 0.45;
-  const emissiveIntensity = hovered ? 1.8 : isLive ? 0.6 : 0.2;
+  const emissiveIntensity = isSelected
+    ? 2.2
+    : hovered
+      ? 1.6
+      : isLive
+        ? 0.6
+        : 0.2;
 
   return (
     <group position={config.position3d}>
       {/* Main building body */}
       <mesh
         ref={meshRef}
+        onPointerDown={handlePointerDown}
         onClick={handleClick}
         onPointerEnter={() => {
           setHovered(true);
           if (isLive) document.body.style.cursor = 'pointer';
+          invalidate();
         }}
         onPointerLeave={() => {
           setHovered(false);
           document.body.style.cursor = '';
+          invalidate();
         }}
         castShadow
         receiveShadow
-        scale={clicked ? 0.94 : 1}
+        scale={1}
       >
         <boxGeometry args={[w, h, d]} />
         <meshStandardMaterial
@@ -99,13 +162,13 @@ const Building: React.FC<BuildingProps> = ({
         />
       </mesh>
 
-      {/* Glowing base ring */}
+      {/* Base ring */}
       <mesh position={[0, -h / 2 + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[w * 0.6, w * 0.9, 32]} />
+        <ringGeometry args={[w * 0.6, w * (isSelected ? 1.05 : 0.9), 32]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={hovered ? 0.55 : 0.2}
+          opacity={isSelected ? 0.75 : hovered ? 0.55 : 0.2}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -116,13 +179,13 @@ const Building: React.FC<BuildingProps> = ({
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={hovered ? 4 : 2}
+          emissiveIntensity={isSelected ? 4.5 : hovered ? 3.5 : 1.8}
           roughness={0.1}
           metalness={0.9}
         />
       </mesh>
 
-      {/* Grid lines on front face (decorative) */}
+      {/* Grid lines on front face */}
       {[0.33, 0.66].map((t, i) => (
         <mesh key={i} position={[0, h * (t - 0.5), d / 2 + 0.01]}>
           <planeGeometry args={[w - 0.1, 0.04]} />
@@ -130,7 +193,7 @@ const Building: React.FC<BuildingProps> = ({
         </mesh>
       ))}
 
-      {/* Floating HTML label */}
+      {/* Floating building label */}
       <Html
         position={[0, h / 2 + 0.7, 0]}
         center
@@ -139,15 +202,20 @@ const Building: React.FC<BuildingProps> = ({
         style={{ pointerEvents: 'none' }}
       >
         <div
-          className={styles.buildingLabel}
+          className={`${styles.buildingLabel} ${isSelected ? styles.buildingLabelSelected : ''}`}
           style={{
-            borderColor: config.accent,
-            color: hovered ? '#fff' : '#ffffffcc',
-            background: hovered
-              ? `${config.accent}22`
-              : 'rgba(10,10,18,0.82)',
-            boxShadow: hovered ? `0 0 16px ${config.accent}55` : 'none',
-            transform: hovered ? 'scale(1.06)' : 'scale(1)',
+            borderColor: isSelected ? '#ffffff' : config.accent,
+            color: hovered || isSelected ? '#fff' : '#ffffffcc',
+            background: isSelected
+              ? `${config.accent}55`
+              : hovered
+                ? `${config.accent}25`
+                : 'rgba(10,10,18,0.85)',
+            boxShadow: isSelected
+              ? `0 0 20px ${config.accent}aa`
+              : hovered
+                ? `0 0 16px ${config.accent}55`
+                : 'none',
           }}
         >
           <span className={styles.buildingLabelTitle}>{config.title}</span>
@@ -192,80 +260,102 @@ const Ground: React.FC = () => (
   </>
 );
 
-// ── Ambient particles ─────────────────────────────────────────────────────────
+// ── WebGL Context Loss Listener ───────────────────────────────────────────────
 
-const NUM_PARTICLES = 60;
+const ContextLossHandler: React.FC<{ onContextLost?: () => void }> = ({
+  onContextLost,
+}) => {
+  const { gl } = useThree();
 
-const Particles: React.FC<{ reducedMotion: boolean }> = ({ reducedMotion }) => {
-  const ref = useRef<THREE.Points>(null!);
+  useEffect(() => {
+    const canvas = gl.domElement;
+    if (!canvas) return;
 
-  const [positions] = useState(() => {
-    const arr = new Float32Array(NUM_PARTICLES * 3);
-    for (let i = 0; i < NUM_PARTICLES; i++) {
-      arr[i * 3 + 0] = (Math.random() - 0.5) * 40;
-      arr[i * 3 + 1] = Math.random() * 12 + 0.5;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 40;
-    }
-    return arr;
-  });
+    const handleLoss = (event: Event) => {
+      event.preventDefault();
+      onContextLost?.();
+    };
 
-  useFrame(({ clock }) => {
-    if (reducedMotion || !ref.current) return;
-    ref.current.rotation.y = clock.getElapsedTime() * 0.015;
-  });
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.06}
-        color="#6366f1"
-        transparent
-        opacity={0.55}
-        sizeAttenuation
-      />
-    </points>
-  );
-};
-
-// ── Camera auto-orbit on idle ─────────────────────────────────────────────────
-
-const CameraIdleOrbit: React.FC<{
-  reducedMotion: boolean;
-  userInteracted: boolean;
-}> = ({ reducedMotion, userInteracted }) => {
-  const { camera } = useThree();
-
-  useFrame(({ clock }) => {
-    if (reducedMotion || userInteracted) return;
-    const t = clock.getElapsedTime() * 0.08;
-    const radius = 22;
-    camera.position.x = Math.sin(t) * radius;
-    camera.position.z = Math.cos(t) * radius;
-    camera.position.y = 14 + Math.sin(t * 0.5) * 1.5;
-    camera.lookAt(0, 1, -3);
-  });
+    canvas.addEventListener('webglcontextlost', handleLoss);
+    return () => {
+      canvas.removeEventListener('webglcontextlost', handleLoss);
+    };
+  }, [gl, onContextLost]);
 
   return null;
 };
 
 // ── Inner scene ───────────────────────────────────────────────────────────────
 
-const InnerScene: React.FC<{
+interface InnerSceneProps {
   reducedMotion: boolean;
-  userInteracted: boolean;
-}> = ({ reducedMotion, userInteracted }) => {
+  selectedRoomId: string | null;
+  onSelectRoom: (roomId: string) => void;
+  onRegisterReset: (resetFn: () => void) => void;
+  onContextLost?: () => void;
+}
+
+const INITIAL_CAMERA_POS: [number, number, number] = [0, 14, 22];
+const INITIAL_TARGET_POS: [number, number, number] = [0, 1, -3];
+
+const InnerScene: React.FC<InnerSceneProps> = ({
+  reducedMotion,
+  selectedRoomId,
+  onSelectRoom,
+  onRegisterReset,
+  onContextLost,
+}) => {
+  const { camera, invalidate } = useThree();
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const { progress } = useCyberStore();
+
+  // Register reset function with parent
+  useEffect(() => {
+    onRegisterReset(() => {
+      if (controlsRef.current) {
+        controlsRef.current.target.set(
+          INITIAL_TARGET_POS[0],
+          INITIAL_TARGET_POS[1],
+          INITIAL_TARGET_POS[2]
+        );
+        controlsRef.current.update();
+      }
+      camera.position.set(
+        INITIAL_CAMERA_POS[0],
+        INITIAL_CAMERA_POS[1],
+        INITIAL_CAMERA_POS[2]
+      );
+      camera.lookAt(
+        INITIAL_TARGET_POS[0],
+        INITIAL_TARGET_POS[1],
+        INITIAL_TARGET_POS[2]
+      );
+      invalidate();
+    });
+  }, [camera, invalidate, onRegisterReset]);
 
   return (
     <>
+      <ContextLossHandler onContextLost={onContextLost} />
+
+      {/* Camera controls: bounded, auto-rotation disabled, damping disabled under reduced motion */}
+      <OrbitControls
+        ref={controlsRef}
+        enablePan={false}
+        minDistance={8}
+        maxDistance={40}
+        minPolarAngle={0.3}
+        maxPolarAngle={Math.PI / 2.1}
+        target={INITIAL_TARGET_POS}
+        autoRotate={false}
+        enableDamping={!reducedMotion}
+        dampingFactor={0.05}
+        enabled={!reducedMotion}
+        onChange={() => invalidate()}
+      />
+
       {/* Lighting */}
-      <ambientLight intensity={0.35} />
+      <ambientLight intensity={0.4} />
       <directionalLight
         position={[12, 20, 8]}
         intensity={1.4}
@@ -278,13 +368,6 @@ const InnerScene: React.FC<{
       <pointLight position={[14, 4, 0]} intensity={0.5} color="#818cf8" />
 
       <Ground />
-
-      {!reducedMotion && <Particles reducedMotion={reducedMotion} />}
-
-      <CameraIdleOrbit
-        reducedMotion={reducedMotion}
-        userInteracted={userInteracted}
-      />
 
       {ROOM_CONFIGS.map((cfg) => {
         const isLive = (cfg.challengeIds as string[]).some((id) =>
@@ -302,6 +385,8 @@ const InnerScene: React.FC<{
             passedCount={passedCount}
             isLive={isLive}
             reducedMotion={reducedMotion}
+            isSelected={selectedRoomId === cfg.id}
+            onSelect={onSelectRoom}
           />
         );
       })}
@@ -313,49 +398,77 @@ const InnerScene: React.FC<{
 
 export interface CampusSceneProps {
   reducedMotion: boolean;
+  selectedRoomId: string | null;
+  onSelectRoom: (roomId: string) => void;
+  onContextLost?: () => void;
 }
 
-export const CampusScene: React.FC<CampusSceneProps> = ({ reducedMotion }) => {
-  const [userInteracted, setUserInteracted] = useState(false);
+export const CampusScene: React.FC<CampusSceneProps> = ({
+  reducedMotion,
+  selectedRoomId,
+  onSelectRoom,
+  onContextLost,
+}) => {
+  const resetCameraRef = useRef<(() => void) | null>(null);
+
+  const handleRegisterReset = useCallback((fn: () => void) => {
+    resetCameraRef.current = fn;
+  }, []);
+
+  const handleResetClick = useCallback(() => {
+    if (resetCameraRef.current) {
+      resetCameraRef.current();
+    }
+  }, []);
+
+  // Clean up global cursor on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = '';
+    };
+  }, []);
 
   return (
-    <div className={styles.canvasWrapper} aria-hidden="true">
+    <div className={styles.canvasWrapper}>
       <Canvas
+        frameloop="demand"
         shadows
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: false }}
-        onPointerDown={() => setUserInteracted(true)}
-        onWheel={() => setUserInteracted(true)}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
         <PerspectiveCamera
           makeDefault
-          position={[0, 14, 22]}
+          position={INITIAL_CAMERA_POS}
           fov={55}
           near={0.1}
           far={200}
         />
-        <OrbitControls
-          enablePan={false}
-          minDistance={8}
-          maxDistance={40}
-          minPolarAngle={0.3}
-          maxPolarAngle={Math.PI / 2.1}
-          target={[0, 1, -3]}
-          onChange={() => setUserInteracted(true)}
-          enabled={!reducedMotion}
-        />
         <Suspense fallback={null}>
           <InnerScene
             reducedMotion={reducedMotion}
-            userInteracted={userInteracted}
+            selectedRoomId={selectedRoomId}
+            onSelectRoom={onSelectRoom}
+            onRegisterReset={handleRegisterReset}
+            onContextLost={onContextLost}
           />
         </Suspense>
       </Canvas>
 
-      {/* Keyboard hint */}
+      {/* Accessible Reset View button */}
+      <button
+        type="button"
+        className={styles.resetViewBtn}
+        onClick={handleResetClick}
+        aria-label="Reset campus camera view"
+      >
+        <RotateCcw size={14} aria-hidden="true" />
+        <span>Reset View</span>
+      </button>
+
+      {/* Orbit hint (hidden when reduced motion is requested) */}
       {!reducedMotion && (
-        <div className={styles.orbitHint}>
-          Drag to orbit · Scroll to zoom
+        <div className={styles.orbitHint} aria-hidden="true">
+          Drag to orbit · Scroll to zoom · Click building to select
         </div>
       )}
     </div>
