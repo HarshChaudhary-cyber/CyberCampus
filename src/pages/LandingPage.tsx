@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import {
   Shield,
   Target,
@@ -7,7 +6,7 @@ import {
   Award,
   Zap,
 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { LinkButton } from '../components/ui/Button';
 import styles from './pages.module.css';
 
 const FEATURES = [
@@ -55,17 +54,13 @@ export const LandingPage: React.FC = () => (
         </p>
 
         <div className={styles.actions}>
-          <Button as="button" size="lg" variant="primary">
-            <Link to="/campus" style={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={18} aria-hidden="true" />
-              Enter Campus
-            </Link>
-          </Button>
-          <Button as="button" size="lg" variant="secondary">
-            <Link to="/dashboard" style={{ color: 'inherit', textDecoration: 'none' }}>
-              View Dashboard
-            </Link>
-          </Button>
+          <LinkButton to="/campus" size="lg" variant="primary">
+            <Zap size={18} aria-hidden="true" />
+            Enter Campus
+          </LinkButton>
+          <LinkButton to="/dashboard" size="lg" variant="secondary">
+            View Dashboard
+          </LinkButton>
         </div>
       </div>
     </section>

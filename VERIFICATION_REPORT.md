@@ -1,9 +1,9 @@
-# CyberCampus — Release Verification Report (Task 8B)
+# CyberCampus — Release Verification Report
 
-**Date**: 2026-10-01  
 **Project**: CyberCampus  
 **Repository**: https://github.com/HarshChaudhary-cyber/CyberCampus.git  
-**Verification Scope**: Real Browser Verification & Confirmed Defect Remediation  
+**Last Updated**: 2026-10-01  
+**Verification Scope**: 3D Campus Accessibility, Real Browser Verification, Defect Remediation, and Progress / Portfolio / Settings Polish (Tasks 8A.1, 8B, and 9A)  
 
 ---
 
@@ -19,7 +19,7 @@
 
 ---
 
-## 2. Checks Actually Performed in Real Browser
+## 2. Checks Actually Performed in Real Browser (Tasks 8B & 9A)
 
 ### A. 3D Campus Viewport & Interaction Verification (`/campus`)
 - **Desktop (1280×800) and Mobile (375×667) Viewports**:
@@ -41,7 +41,7 @@
 
 ### C. Representative Learning Journeys Across All Five Rooms
 
-1. **Room 1: Social Engineering (`cc-ph-01` — The Suspicious Invoice)**
+1. **Room 1: Phishing Defense (`cc-ph-01` — The Suspicious Invoice)**
    - Evidence tabs: Inspected email headers and body text.
    - Interactions: Flag selection (multiple checkboxes: link mismatch, reply-to anomaly, attachment spelling, artificial urgency, vendor verification), single-choice action, and DKIM/SPF/DMARC authentication classification.
    - Result: 100/100 Passed (`/results/:attemptId`). Tested retry/review flow.
@@ -58,25 +58,62 @@
 
 4. **Room 4: Digital Forensics (`cc-df-03` — Steganography Detection)**
    - Forensic Extraction Workbench verification:
+     * Carrier Integrity vs Extraction Checksum Distinction:
+       - **Carrier Exhibit Hash**: Exhibit PNG files are verified against distinct SHA-256 exhibit file hashes (`exhibitSha256`) to ensure uncorrupted raw asset transfer.
+       - **Extraction Protocol Payload Checksum**: Once decoded via sequential RGB-LSB, payload extraction relies on a separate internal protocol frame length header and message payload checksum. These are distinct verification mechanisms and must not be conflated.
      * Control Exhibit A (`evidence-scan-01.png`): Correctly rejected (natural gradient noise, no valid framing).
      * Alternate Mode rejection: Exhibit B with Alpha-LSB correctly rejected.
-     * Valid carrier extraction: Exhibit B (`evidence-scan-02.png`) with Sequential RGB-LSB extracted 130-byte message ("CONFIDENTIAL NOTE: Scheduled warehouse transfer for Q4 completed without incident. Ref: AUDIT-7749...") with verified SHA-256 checksum.
+     * Valid carrier extraction: Exhibit B (`evidence-scan-02.png`) with Sequential RGB-LSB extracted 130-byte message ("CONFIDENTIAL NOTE: Scheduled warehouse transfer for Q4 completed without incident. Ref: AUDIT-7749...") with valid payload checksum.
    - Assessment submission: Extraction methodology, carrier identification, and objective defensible reporting.
    - Result: 100/100 Passed (`/results/:attemptId`).
 
-5. **Room 5: Privacy Engineering (`cc-pr-03` — Over-Privileged Mobile App)**
+5. **Room 5: Privacy & Account Security (`cc-pr-03` — Over-Privileged Mobile App)**
    - Evidence tabs: Inspected mobile app telemetry data inventory.
    - Interactions: Telemetry categorization (necessary vs optional vs excessive), guided-form proportionate configuration (scope, retention, telemetry access), and privacy remediation plan.
    - Result: 100/100 Passed (`/results/:attemptId`).
 
-### D. Dashboard, Portfolio & Persistence Verification
-- **Dashboard (`/dashboard`)**: Verified real-time stats update to 5 attempts, 5 challenges passed, 23 skills practiced, and 33% overall campus completion.
-- **Portfolio (`/portfolio`)**: Verified all 5 completed challenges appear with green pass badges, 100/100 scores, earned skill tags, and "Play Again" actions.
-- **Reload Persistence**: Executed full browser reload (`window.location.reload()`) via CDP; confirmed all 5 portfolio entries, scores, and dashboard metrics remain persisted in `localStorage`.
+---
+
+## 3. Progress, Portfolio, and Settings Polish (Task 9A)
+
+### A. Dashboard Improvements (`/dashboard`)
+- **Registry-Derived Totals**: All challenge totals are derived dynamically from `ALL_CHALLENGES` filtered by `LIVE_CHALLENGE_IDS` (15 challenges across 5 rooms) rather than hardcoded numbers. Safely handles empty registries without division by zero.
+- **Unique Completed Challenges**: Calculates completion from unique passed live challenges (`completedIds.size`). Duplicate passes on the same challenge do not inflate totals.
+- **Empty State**: Clear, engaging onboarding state with an immediate action button: `"Start First Challenge: The Suspicious Invoice"`.
+- **Room Progress Breakdown**: Individual progress bars for each of the five rooms showing passed/total challenges and percentage completion with direct navigation links.
+- **Deterministic "Continue Learning" Recommendation**:
+  - Priority 1: Recommends the latest previously attempted, uncompleted live challenge (`isResume: true`, button text: "Resume Challenge").
+  - Priority 2: Recommends the first uncompleted live challenge in curriculum order (`isResume: false`, button text: "Start Challenge").
+  - Priority 3: When all 15 live challenges are passed, displays the Campus Complete celebration banner.
+- **Skills Practised vs Earned Skills Distinction**:
+  - Skills practiced are clearly labeled as interactive simulation exercises.
+  - Prominent disclaimer text makes clear that hands-on simulation skills demonstrate learning task completion and do not imply formal certification or professional qualification.
+
+### B. Portfolio Refinements (`/portfolio`)
+- **Clear Section Separation**: Passed challenges and attempted-but-uncompleted challenges are separated into dedicated sections: `"Completed (N)"` and `"In Progress (N)"`.
+- **Rich Challenge Metadata**: Each card displays room title, difficulty badge, best score (`formatScore(score)}/100`), total attempt count, completion date (`formatDate(passedAt)`), and relevant skill badges.
+- **Review Results Links**: Added "Review Results" action linking directly to `/results/:attemptId` for the highest-scoring attempt, with the latest attempt winning score ties (`getBestAttemptForChallenge`).
+- **Retries & Privacy Disclosure**: Direct retry actions ("Play Again" / "Retry") and clear local-storage privacy disclosure: `"Portfolio — Saved Locally on this Device"`. No accounts, public sharing, PDF export, or backends added.
+
+### C. Settings Accessibility & Data Management (`/settings`)
+- **Display Name**: Input features an explicit `<label htmlFor="settings-display-name">` and accessible save announcement banner (`role="status"`, `aria-live="polite"`).
+- **Accurate Descriptions**:
+  - Reduced Motion: "Disables smooth camera transitions and UI motion animations."
+  - Low Performance Mode: "Switches the campus view to an accessible 2D map instead of 3D WebGL rendering."
+- **Unimplemented Audio**: Sound toggle control was removed from user-facing toggles because ambient/interaction audio is not implemented, while preserving `settings.soundEnabled` in store and types for backward/forward schema compatibility.
+- **Reset Flow**:
+  - Cancel button safely closes modal and keeps all progress intact.
+  - Confirmed reset permanently clears attempts, portfolio entries, and skill tags while strictly preserving user profile (display name and settings).
+
+### D. Semantic Interactive Controls & Layout
+- Replaced all nested `<Link><Button>` anti-patterns across `DashboardPage`, `PortfolioPage`, `ResultsPage`, and `LandingPage` with single semantic `<LinkButton>` elements.
+- Added visible `:focus-visible` keyboard focus rings and responsive CSS Modules styles.
+- Verified desktop and mobile viewports (1280px and 390px) without horizontal overflow.
+- Fractional scores are consistently formatted for display via `formatScore` without altering stored numerical values.
 
 ---
 
-## 3. Confirmed Defects and Applied Fixes
+## 4. Confirmed Defects and Applied Fixes
 
 | # | Component | Defect Observed | Fix Applied |
 |---|---|---|---|
@@ -84,42 +121,59 @@
 | 2 | `src/campus/campusUtils.ts` & `src/pages/CampusPage.tsx` | When a lazy dynamic chunk failed to load, the UI presented a "Retry" button that simply re-triggered the browser's cached rejected module promise without re-fetching. | Added `isChunkLoadError` helper and honest "Reload Page" button (`window.location.reload()`) for chunk errors while retaining "Retry 3D View" for runtime WebGL errors. |
 | 3 | `src/campus/CampusScene.module.css` & `src/campus/CampusScene.tsx` | Mobile users scrolling vertically over the 3D canvas could have touch events captured by OrbitControls. | Added `touch-action: pan-y !important;` to canvas wrapper and canvas, and configured OrbitControls touch configuration. |
 | 4 | `src/campus/CampusScene.tsx` | Console warning: `THREE.WebGLShadowMap: PCFSoftShadowMap has been removed. Using PCFShadowMap instead.` | Explicitly passed `shadows={{ type: THREE.PCFShadowMap }}` to `<Canvas>`. |
-| 5 | `src/campus/CampusErrorBoundary.tsx` | ESLint warning `react-refresh/only-export-components` when non-component helper was exported from component file. | Relocated `isChunkLoadError` to `src/campus/campusUtils.ts`. |
+| 5 | `src/pages/DashboardPage.tsx` | Hardcoded 15 total challenges and lacked empty state / room progress breakdown. | Replaced with dynamic registry calculation, 5 room progress bars, empty state, and deterministic recommendation. |
+| 6 | `src/pages/PortfolioPage.tsx` | Mixed completed and in-progress challenges without Review Results link or room/difficulty badges. | Separated Completed / In-Progress sections, added `getBestAttemptForChallenge` Review Results link, and room/difficulty badges. |
+| 7 | `src/pages/SettingsPage.tsx` | Display name lacked visible `<label>` and save feedback; sound toggle advertised non-existent audio. | Added visible label, `role="status"` save feedback, and removed unimplemented sound control while preserving stored field. |
+| 8 | Multiple Pages (`Landing`, `Results`, `Dashboard`, `Portfolio`) | Nested `<Link><Button>` violated HTML specification (button inside interactive anchor). | Introduced semantic `<LinkButton>` and refactored all navigation buttons to single interactive elements. |
 
 ---
 
-## 4. Automated Check Results
+## 5. Actual Checks Executed vs Unexecuted Checks
 
-- **Unit & Integration Tests**: `npm run test:run`
-  - **Result**: 18 test files passed, 543 tests passed (0 failures).
-- **ESLint**: `npm run lint`
-  - **Result**: 0 errors, 0 warnings.
-- **TypeScript**: `npx tsc -b`
-  - **Result**: Clean build, 0 type errors.
-- **Production Build**: `npm run build`
-  - **Result**: Clean production bundle generated in 3.28s.
-  - Bundle chunking:
-    * Main chunk (`index-*.js`): 907.97 kB (gzip: 267.07 kB)
-    * Lazy 3D Scene chunk (`CampusScene-*.js`): 944.06 kB (gzip: 251.66 kB)
-    * Lazy loading ensures 3D Three.js bundle is never fetched in 2D or low-performance modes.
+### Actual Checks Executed
+1. **Unit & Integration Tests**: `npm run test:run` — 19 test files, 566 tests passed (0 failures).
+2. **ESLint**: `npm run lint` — 0 errors, 0 warnings.
+3. **TypeScript Typecheck**: `npx tsc -b` — Clean compilation, 0 errors.
+4. **Production Build**: `npm run build` — Clean production bundle generated in 1.31s.
+5. **Real Browser (CDP Chrome) Checks in Isolated Profile**:
+   - Empty state Dashboard (Desktop 1280×800): verified heading, empty banner, action button, no horizontal overflow.
+   - Empty state Dashboard (Mobile 390×844): verified room cards layout, no horizontal overflow.
+   - Empty state Portfolio: verified pill, local storage notice, enter campus action, no horizontal overflow.
+   - Settings page interactions: verified visible label, display name save feedback (`role="status"`), toggle descriptions, and lack of sound toggle.
+   - Populated Dashboard state: verified stats, room progress bars, Continue Learning recommendation recommending attempted uncompleted challenge (`cc-so-01`), and skills disclaimer.
+   - Populated Portfolio state: verified Completed vs In-Progress separation, highest-score attempt selection, tie-breaker handling, and Review Results navigation.
+   - Results review page: verified score formatting and step review.
+   - Settings reset flow: verified cancel preserves progress; confirmed reset clears progress while preserving display name and settings; verified reload persistence.
+
+### Unexecuted Checks
+1. **Cloud Sync / Remote Accounts**: Not executed because CyberCampus is intentionally client-side and local-storage only.
+2. **PDF Certificate Export**: Not executed because formal certification export is explicitly out of scope.
+3. **Screen Reader Audio Verification**: Visual DOM and accessibility attribute inspections (`role="status"`, `aria-live="polite"`, `aria-labelledby`, `:focus-visible`) were verified via CDP, but auditory screen reader speech output was not tested.
 
 ---
 
-## 5. Artifacts and Browser Evidence
+## 6. Artifacts and Browser Evidence
 
 The following visual evidence was captured from real Google Chrome executions and saved to the project artifact directory:
-- `campus_desktop.png` & `campus_mobile.png`: 3D campus rendering at desktop (1280x800) and mobile (375x667).
+- `task9a_dash_empty_desktop.png`: Empty state dashboard at 1280×800 with "Begin Your Cybersecurity Training".
+- `task9a_dash_empty_mobile.png`: Empty state dashboard at 390×844 with no horizontal overflow.
+- `task9a_portfolio_empty.png`: Empty state portfolio with local-storage disclosure.
+- `task9a_settings_save_feedback.png`: Settings page with visible label and accessible save confirmation.
+- `task9a_dash_populated_desktop.png`: Populated dashboard with stats, 5 room progress bars, and recommendation.
+- `task9a_portfolio_populated_desktop.png`: Populated portfolio separating completed and in-progress challenges.
+- `task9a_results_review_page.png`: Results review page accessed via Portfolio Review Results link.
+- `task9a_after_reset_settings.png`: Settings after confirmed reset showing preserved display name.
+- `campus_desktop.png` & `campus_mobile.png`: 3D campus rendering at desktop (1280×800) and mobile (375×667).
 - `panel_privacy.png` & `panel_secops.png`: Building selection HTML detail panels.
 - `journey_ph01_results.png`: Room 1 phishing assessment results (100/100 Passed).
 - `journey_so03_results.png`: Room 2 attack chain reconstruction results (100/100 Passed).
 - `journey_nw02_results.png`: Room 3 firewall rule audit results (100/100 Passed).
 - `journey_df03_results.png`: Room 4 steganography detection results (100/100 Passed).
 - `journey_pr03_results.png`: Room 5 privacy minimisation audit results (100/100 Passed).
-- `dashboard_verified.png`: Progress dashboard with 5 challenges passed and 23 skills practiced.
-- `portfolio_verified.png` & `portfolio_after_reload.png`: Portfolio before and after browser page reload showing all 5 completed challenges and earned skill credentials.
 
 ---
 
-## 6. Remaining Blockers
+## 7. Remaining Limitations
 
-- **None**: All 5 learning journeys, 3D campus interactions, steganography workbench extraction modes, failure recovery states, and data persistence mechanisms have been validated in real Google Chrome and pass automated regression tests.
+- **Browser Audio**: Interaction and ambient audio remain unimplemented; audio settings controls remain hidden until sound assets and an audio engine are added.
+- **Client-Side Storage**: All progress is bound to the local browser profile; clearing browser data clears progress unless exported/imported in a future release.

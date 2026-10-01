@@ -1,115 +1,150 @@
 import React, { useState } from 'react';
-import { Settings, AlertTriangle } from 'lucide-react';
+import { Settings, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import styles from './pages.module.css';
+import styles from './SettingsPage.module.css';
 
 export const SettingsPage: React.FC = () => {
   const { profile, updateSettings, setDisplayName, resetAllProgress } = useCyberStore();
   const { settings, displayName } = profile;
   const [nameInput, setNameInput] = useState(displayName);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
 
+  const handleSaveDisplayName = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = nameInput.trim();
+    setDisplayName(trimmed);
+    setNameInput(trimmed);
+    setSaveFeedback('Display name saved');
+    setTimeout(() => {
+      setSaveFeedback(null);
+    }, 3000);
+  };
+
   return (
-    <div className={styles.page}>
-      <span className={styles.tag}>Settings</span>
-      <Settings size={48} className={styles.icon} aria-hidden="true" />
-      <h1 className={styles.heading}>Settings</h1>
-      <p className={styles.sub}>Personalise your CyberCampus experience.</p>
+    <div className={styles.settingsPage}>
+      {/* ── Page Header ── */}
+      <header className={styles.header}>
+        <div className={styles.pill}>
+          <Settings size={13} aria-hidden="true" />
+          <span>Preferences & Data</span>
+        </div>
+        <h1 className={styles.title}>Settings</h1>
+        <p className={styles.subtitle}>
+          Personalise your CyberCampus experience and manage locally stored progress.
+        </p>
+      </header>
 
-      <div style={{
-        width: '100%',
-        maxWidth: '480px',
-        marginTop: 'var(--space-8)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-5)',
-      }}>
+      <div className={styles.sectionsContainer}>
+        {/* ── Display Name Card ── */}
+        <section className={styles.card} aria-labelledby="settings-profile-heading">
+          <h2 id="settings-profile-heading" className={styles.cardTitle}>
+            Profile
+          </h2>
+          <p className={styles.cardDesc}>
+            Customise how your name appears on your dashboard greeting.
+          </p>
 
-        {/* Display name */}
-        <section style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-          <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-3)' }}>Display Name</h2>
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-            <input
-              id="settings-display-name"
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Optional — shown on your dashboard"
-              maxLength={40}
-              style={{
-                flex: 1,
-                background: 'var(--color-surface-alt)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                color: 'var(--color-text-primary)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'var(--text-sm)',
-                padding: 'var(--space-2) var(--space-3)',
-                outline: 'none',
-                minHeight: '44px',
-              }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--color-accent)'; }}
-              onBlur={(e) => { e.target.style.borderColor = 'var(--color-border)'; }}
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setDisplayName(nameInput.trim())}
-              aria-label="Save display name"
-            >
-              Save
-            </Button>
+          <form onSubmit={handleSaveDisplayName}>
+            <label htmlFor="settings-display-name" className={styles.label}>
+              Display Name
+            </label>
+            <p className={styles.helpText}>
+              Optional nickname stored locally on this device (maximum 40 characters).
+            </p>
+            <div className={styles.inputRow}>
+              <input
+                id="settings-display-name"
+                className={styles.textInput}
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="CyberCadet"
+                maxLength={40}
+                aria-describedby={saveFeedback ? 'settings-name-feedback' : undefined}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                type="submit"
+                aria-label="Save display name"
+              >
+                Save
+              </Button>
+            </div>
+            {saveFeedback && (
+              <div
+                id="settings-name-feedback"
+                role="status"
+                aria-live="polite"
+                className={styles.saveFeedback}
+              >
+                <CheckCircle2 size={14} aria-hidden="true" />
+                <span>{saveFeedback}</span>
+              </div>
+            )}
+          </form>
+        </section>
+
+        {/* ── Accessibility & Performance Card ── */}
+        <section className={styles.card} aria-labelledby="settings-a11y-heading">
+          <h2 id="settings-a11y-heading" className={styles.cardTitle}>
+            Accessibility & Performance
+          </h2>
+          <p className={styles.cardDesc}>
+            Adjust campus graphics and motion to suit your device and comfort preferences.
+          </p>
+
+          <div className={styles.toggleList}>
+            <label htmlFor="settings-reducedMotion" className={styles.toggleRow}>
+              <div className={styles.toggleText}>
+                <span className={styles.toggleLabel}>Reduced Motion</span>
+                <span className={styles.toggleDesc}>
+                  Disables smooth camera transitions and UI motion animations.
+                </span>
+              </div>
+              <input
+                id="settings-reducedMotion"
+                type="checkbox"
+                className={styles.checkbox}
+                checked={settings.reducedMotion}
+                onChange={(e) => updateSettings({ reducedMotion: e.target.checked })}
+              />
+            </label>
+
+            <label htmlFor="settings-lowPerformanceMode" className={styles.toggleRow}>
+              <div className={styles.toggleText}>
+                <span className={styles.toggleLabel}>Low Performance Mode</span>
+                <span className={styles.toggleDesc}>
+                  Switches the campus view to an accessible 2D map instead of 3D WebGL rendering.
+                </span>
+              </div>
+              <input
+                id="settings-lowPerformanceMode"
+                type="checkbox"
+                className={styles.checkbox}
+                checked={settings.lowPerformanceMode}
+                onChange={(e) => updateSettings({ lowPerformanceMode: e.target.checked })}
+              />
+            </label>
           </div>
         </section>
 
-        {/* Toggles */}
-        <section style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-          <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-4)' }}>Accessibility & Performance</h2>
-          {(
-            [
-              { key: 'reducedMotion',     label: 'Reduced motion',      desc: 'Disables animations and camera fly-ins.' },
-              { key: 'lowPerformanceMode',label: 'Low performance mode', desc: 'Replaces 3D campus with a 2D map.' },
-              { key: 'soundEnabled',      label: 'Sound effects',        desc: 'Enable ambient and interaction sounds.' },
-            ] as const
-          ).map(({ key, label, desc }) => (
-            <label
-              key={key}
-              htmlFor={`settings-${key}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 'var(--space-3) 0',
-                borderBottom: '1px solid var(--color-border-subtle)',
-                cursor: 'pointer',
-                gap: 'var(--space-4)',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>{label}</div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{desc}</div>
-              </div>
-              <input
-                id={`settings-${key}`}
-                type="checkbox"
-                checked={settings[key]}
-                onChange={(e) => updateSettings({ [key]: e.target.checked })}
-                style={{ width: '18px', height: '18px', accentColor: 'var(--color-accent)', cursor: 'pointer' }}
-                aria-label={label}
-              />
-            </label>
-          ))}
-        </section>
-
-        {/* Danger zone */}
-        <section style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-          <h2 style={{ fontSize: 'var(--text-base)', marginBottom: 'var(--space-2)', color: 'var(--color-danger)' }}>
+        {/* ── Danger Zone Card ── */}
+        <section
+          className={`${styles.card} ${styles.dangerCard}`}
+          aria-labelledby="settings-danger-heading"
+        >
+          <h2
+            id="settings-danger-heading"
+            className={`${styles.cardTitle} ${styles.cardTitleDanger}`}
+          >
             Danger Zone
           </h2>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-4)' }}>
-            This permanently deletes all attempts, portfolio entries, and skill tags from this device.
+          <p className={styles.cardDesc}>
+            Permanently delete all attempts, scores, and skills from this browser. This cannot be undone.
           </p>
           <Button
             variant="danger"
@@ -123,33 +158,37 @@ export const SettingsPage: React.FC = () => {
         </section>
       </div>
 
-      {/* Reset confirmation modal */}
+      {/* ── Reset Confirmation Modal ── */}
       <Modal
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}
         title="Reset All Progress?"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowResetModal(false)}>Cancel</Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowResetModal(false)}
+            >
+              Cancel
+            </Button>
             <Button
               variant="danger"
               onClick={() => {
                 resetAllProgress();
                 setShowResetModal(false);
               }}
-              aria-label="Confirm reset"
             >
               Yes, Reset Everything
             </Button>
           </>
         }
       >
-        <p style={{ color: 'var(--color-text-secondary)' }}>
-          All attempts, portfolio entries, and skill tags stored on this device
-          will be permanently deleted. This cannot be undone.
+        <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 var(--space-3)' }}>
+          All challenge attempts, portfolio entries, and skill tags stored on this device
+          will be permanently deleted. This action cannot be reversed.
         </p>
-        <p style={{ marginTop: 'var(--space-3)', color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Your display name and settings will be kept.
+        <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+          Your display name and accessibility settings will be kept.
         </p>
       </Modal>
     </div>

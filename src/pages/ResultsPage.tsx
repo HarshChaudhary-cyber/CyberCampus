@@ -1,13 +1,13 @@
-import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, XCircle, Award, RotateCcw, LayoutDashboard, FolderKanban, AlertCircle,
 } from 'lucide-react';
 import { useCyberStore } from '../store';
 import { getChallenge } from '../challenges';
 import { getCorrectAnswerDisplay } from '../challenges/evaluator';
-import { Button } from '../components/ui/Button';
+import { Button, LinkButton } from '../components/ui/Button';
 import { HintDrawer } from '../components/ui/HintDrawer';
+import { formatScore } from '../utils/format';
 import styles from './ResultsPage.module.css';
 import type { Step, StepResponse } from '../types';
 
@@ -72,7 +72,7 @@ export const ResultsPage: React.FC = () => {
         <p style={{ color: 'var(--color-text-muted)' }}>
           This attempt ID ({attemptId}) doesn't exist or belongs to a different device.
         </p>
-        <Link to="/campus"><Button variant="primary">Back to Campus</Button></Link>
+        <LinkButton to="/campus" variant="primary">Back to Campus</LinkButton>
       </div>
     );
   }
@@ -108,7 +108,7 @@ export const ResultsPage: React.FC = () => {
           {/* Score */}
           <div className={styles.scoreRow}>
             <span className={`${styles.scoreMain} ${passed ? styles['scoreMain--passed'] : styles['scoreMain--failed']}`}>
-              {attempt.finalScore}
+              {formatScore(attempt.finalScore)}
             </span>
             <span className={styles.scoreDenom}>/100</span>
           </div>
@@ -116,7 +116,7 @@ export const ResultsPage: React.FC = () => {
           {/* Breakdown */}
           <div className={styles.scoreBreakdown} aria-label="Score breakdown">
             <span className={styles.breakdownItem}>
-              Earned: {attempt.earnedScore}/100
+              Earned: {formatScore(attempt.earnedScore)}/100
             </span>
             {attempt.hintsUsed > 0 && (
               <span className={`${styles.breakdownItem} ${styles.breakdownNeg}`}>
@@ -187,7 +187,7 @@ export const ResultsPage: React.FC = () => {
                       Step {i + 1}: {step.prompt.slice(0, 60)}{step.prompt.length > 60 ? '…' : ''}
                     </div>
                     <span className={`${styles.stepScore} ${getStepScoreClass(earned, step.pointValue)}`}>
-                      {earned}/{step.pointValue} pts
+                      {formatScore(earned)}/{formatScore(step.pointValue)} pts
                     </span>
                   </div>
 
@@ -229,18 +229,14 @@ export const ResultsPage: React.FC = () => {
             <RotateCcw size={15} aria-hidden="true" />
             {passed ? 'Play Again' : 'Retry'}
           </Button>
-          <Link to="/dashboard">
-            <Button variant="secondary" size="md" aria-label="Go to dashboard">
-              <LayoutDashboard size={15} aria-hidden="true" />
-              Dashboard
-            </Button>
-          </Link>
-          <Link to="/portfolio">
-            <Button variant="primary" size="md" aria-label="View portfolio">
-              <FolderKanban size={15} aria-hidden="true" />
-              Portfolio
-            </Button>
-          </Link>
+          <LinkButton to="/dashboard" variant="secondary" size="md" aria-label="Go to dashboard">
+            <LayoutDashboard size={15} aria-hidden="true" />
+            Dashboard
+          </LinkButton>
+          <LinkButton to="/portfolio" variant="primary" size="md" aria-label="View portfolio">
+            <FolderKanban size={15} aria-hidden="true" />
+            Portfolio
+          </LinkButton>
         </div>
       </div>
     </div>
