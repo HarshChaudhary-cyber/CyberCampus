@@ -351,6 +351,10 @@ const InnerScene: React.FC<InnerSceneProps> = ({
         enableDamping={!reducedMotion}
         dampingFactor={0.05}
         enabled={!reducedMotion}
+        touches={{
+          ONE: THREE.TOUCH.ROTATE,
+          TWO: THREE.TOUCH.DOLLY_PAN,
+        }}
         onChange={() => invalidate()}
       />
 
@@ -432,9 +436,10 @@ export const CampusScene: React.FC<CampusSceneProps> = ({
     <div className={styles.canvasWrapper}>
       <Canvas
         frameloop="demand"
-        shadows
+        shadows={{ type: THREE.PCFShadowMap }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        style={{ touchAction: 'pan-y' }}
       >
         <PerspectiveCamera
           makeDefault

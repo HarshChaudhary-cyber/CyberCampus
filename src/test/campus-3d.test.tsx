@@ -18,7 +18,9 @@ import {
   getWebGLAvailability,
   resetWebGLAvailabilityCache,
 } from '../campus/webglSupport';
-import { isDragMovement } from '../campus/campusUtils';
+import { isDragMovement, isChunkLoadError } from '../campus/campusUtils';
+
+let mockSceneError: Error | null = null;
 
 // Mock CampusScene at the component boundary
 vi.mock('../campus/CampusScene', () => {
@@ -33,35 +35,40 @@ vi.mock('../campus/CampusScene', () => {
       selectedRoomId: string | null;
       onSelectRoom: (roomId: string) => void;
       onContextLost?: () => void;
-    }) => (
-      <div
-        data-testid="mock-campus-scene"
-        data-reduced-motion={String(reducedMotion)}
-        data-selected-room={selectedRoomId || 'none'}
-      >
-        <button
-          type="button"
-          data-testid="select-phishing-btn"
-          onClick={() => onSelectRoom('phishing')}
+    }) => {
+      if (mockSceneError) {
+        throw mockSceneError;
+      }
+      return (
+        <div
+          data-testid="mock-campus-scene"
+          data-reduced-motion={String(reducedMotion)}
+          data-selected-room={selectedRoomId || 'none'}
         >
-          Select Phishing
-        </button>
-        <button
-          type="button"
-          data-testid="select-network-btn"
-          onClick={() => onSelectRoom('network')}
-        >
-          Select Network
-        </button>
-        <button
-          type="button"
-          data-testid="trigger-context-loss-btn"
-          onClick={() => onContextLost?.()}
-        >
-          Trigger Context Loss
-        </button>
-      </div>
-    ),
+          <button
+            type="button"
+            data-testid="select-phishing-btn"
+            onClick={() => onSelectRoom('phishing')}
+          >
+            Select Phishing
+          </button>
+          <button
+            type="button"
+            data-testid="select-network-btn"
+            onClick={() => onSelectRoom('network')}
+          >
+            Select Network
+          </button>
+          <button
+            type="button"
+            data-testid="trigger-context-loss-btn"
+            onClick={() => onContextLost?.()}
+          >
+            Trigger Context Loss
+          </button>
+        </div>
+      );
+    },
   };
 });
 
@@ -87,6 +94,7 @@ describe('Campus 3D Accessibility, Motion, and Recovery (Task 8A.1)', () => {
 
     // Default WebGL availability to true for 3D tests
     resetWebGLAvailabilityCache(true);
+    mockSceneError = null;
 
     // Mock matchMedia to default to prefers-reduced-motion: false
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -102,6 +110,7 @@ describe('Campus 3D Accessibility, Motion, and Recovery (Task 8A.1)', () => {
   });
 
   afterEach(() => {
+    mockSceneError = null;
     resetWebGLAvailabilityCache(null);
     vi.restoreAllMocks();
   });
@@ -473,6 +482,100 @@ describe('Campus 3D Accessibility, Motion, and Recovery (Task 8A.1)', () => {
       const available = getWebGLAvailability();
       expect(available).toBe(true);
       expect(loseContextMock).toHaveBeenCalled();
+    });
+
+    it('rejects WebGL 1 when WebGL 2 is unavailable because Three.js strictly requires WebGL 2', () => {
+      resetWebGLAvailabilityCache(null);
+
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        if (tagName === 'canvas') {
+          return {
+            getContext: (type: string) => {
+              // Legacy WebGL 1 returns context, but WebGL 2 returns null
+              if (type === 'webgl2') return null;
+              if (type === 'webgl' || type === 'experimental-webgl') {
+                return {
+                  getExtension: () => null,
+                };
+              }
+              return null;
+            },
+          } as unknown as HTMLCanvasElement;
+        }
+        return originalCreateElement(tagName);
+      });
+
+      const available = getWebGLAvailability();
+      expect(available).toBe(false);
+    });
+
+    it('provides honest reload action for lazy chunk import failures and preserves saved settings', async () => {
+      mockSceneError = new Error('Failed to fetch dynamically imported module: /src/campus/CampusScene.tsx');
+
+      render(
+        <MemoryRouter>
+          <CampusPage />
+        </MemoryRouter>
+      );
+
+      // Verify fallback notice displays chunk load failure guidance
+      const statusNotice = screen.getByRole('status');
+      expect(statusNotice.textContent).toContain(
+        'The 3D campus module failed to load over the network. Showing 2D navigation.'
+      );
+
+      // Honest "Reload Page" button must be shown (NOT a false Retry button)
+      const reloadBtn = screen.getByRole('button', { name: /Reload Page/i });
+      expect(reloadBtn).toBeDefined();
+      expect(screen.queryByRole('button', { name: /Retry 3D View/i })).toBeNull();
+
+      // Temporary failure must NOT overwrite saved user preference
+      expect(useCyberStore.getState().profile.settings.lowPerformanceMode).toBe(false);
+
+      // 2D room navigation remains accessible
+      expect(screen.getAllByRole('link', { name: /Enter /i })).toHaveLength(5);
+    });
+
+    it('recovers from scene runtime render error via Retry 3D view and preserves saved settings', async () => {
+      mockSceneError = new Error('Shader compilation error: syntax error');
+
+      render(
+        <MemoryRouter>
+          <CampusPage />
+        </MemoryRouter>
+      );
+
+      // Verify fallback notice displays runtime error
+      const statusNotice = screen.getByRole('status');
+      expect(statusNotice.textContent).toContain('Shader compilation error: syntax error');
+
+      // "Retry 3D View" button is available
+      const retryBtn = screen.getByRole('button', { name: /Retry 3D View/i });
+      expect(retryBtn).toBeDefined();
+
+      // Saved preference lowPerformanceMode is not overwritten
+      expect(useCyberStore.getState().profile.settings.lowPerformanceMode).toBe(false);
+
+      // Clear the error and click retry
+      mockSceneError = null;
+      fireEvent.click(retryBtn);
+
+      // 3D scene re-mounts successfully
+      expect(await screen.findByTestId('mock-campus-scene')).toBeDefined();
+    });
+
+    it('accurately classifies dynamic import and chunk errors via isChunkLoadError', () => {
+      expect(isChunkLoadError(new Error('Failed to fetch dynamically imported module'))).toBe(true);
+      expect(isChunkLoadError(new Error('error loading dynamically imported module'))).toBe(true);
+      const chunkErr = new Error('Loading chunk 42 failed');
+      chunkErr.name = 'ChunkLoadError';
+      expect(isChunkLoadError(chunkErr)).toBe(true);
+
+      // Normal runtime / WebGL errors are NOT chunk errors
+      expect(isChunkLoadError(new Error('WebGL graphics context was lost'))).toBe(false);
+      expect(isChunkLoadError(new Error('Cannot read properties of null'))).toBe(false);
+      expect(isChunkLoadError(null)).toBe(false);
     });
   });
 

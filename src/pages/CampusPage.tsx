@@ -31,6 +31,7 @@ import { useCyberStore } from '../store';
 import { LIVE_CHALLENGE_IDS } from '../challenges';
 import { ROOM_CONFIGS, ROOM_CONFIG_MAP } from '../campus/roomConfig';
 import { getWebGLAvailability } from '../campus/webglSupport';
+import { isChunkLoadError } from '../campus/campusUtils';
 import { CampusErrorBoundary } from '../campus/CampusErrorBoundary';
 import styles from './CampusPage.module.css';
 
@@ -100,23 +101,38 @@ const SceneWrapper: React.FC<SceneWrapperProps> = ({
     aria-label="Interactive 3D campus view"
   >
     <CampusErrorBoundary
-      fallback={(err, retry) => (
-        <div className={styles.sceneErrorFallback} role="alert">
-          <AlertTriangle size={20} color="#f59e0b" aria-hidden="true" />
-          <div className={styles.sceneErrorBody}>
-            <p className={styles.sceneErrorText}>
-              3D campus scene failed to render ({err.message || 'Runtime error'}).
-            </p>
-            <button
-              type="button"
-              className={styles.retryBtn}
-              onClick={retry}
-            >
-              Retry 3D view
-            </button>
+      fallback={(err, retry) => {
+        const isChunk = isChunkLoadError(err);
+        return (
+          <div className={styles.sceneErrorFallback} role="alert">
+            <AlertTriangle size={20} color="#f59e0b" aria-hidden="true" />
+            <div className={styles.sceneErrorBody}>
+              <p className={styles.sceneErrorText}>
+                {isChunk
+                  ? 'The 3D campus module failed to load over the network.'
+                  : `3D campus scene failed to render (${err.message || 'Runtime error'}).`}
+              </p>
+              {isChunk ? (
+                <button
+                  type="button"
+                  className={styles.retryBtn}
+                  onClick={() => window.location.reload()}
+                >
+                  Reload Page
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.retryBtn}
+                  onClick={retry}
+                >
+                  Retry 3D view
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      }}
       onError={onError}
     >
       <Suspense
@@ -254,15 +270,27 @@ export const CampusPage: React.FC = () => {
         <div className={styles.fallbackNotice} role="status">
           <AlertTriangle size={18} color="#f59e0b" aria-hidden="true" />
           <span className={styles.fallbackNoticeText}>
-            3D campus view is unavailable ({runtimeError}). Showing 2D navigation.
+            {isChunkLoadError(runtimeError)
+              ? 'The 3D campus module failed to load over the network. Showing 2D navigation.'
+              : `3D campus view is unavailable (${runtimeError}). Showing 2D navigation.`}
           </span>
-          <button
-            type="button"
-            className={styles.retryBtn}
-            onClick={handleRetry}
-          >
-            Retry 3D View
-          </button>
+          {isChunkLoadError(runtimeError) ? (
+            <button
+              type="button"
+              className={styles.retryBtn}
+              onClick={() => window.location.reload()}
+            >
+              Reload Page
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.retryBtn}
+              onClick={handleRetry}
+            >
+              Retry 3D View
+            </button>
+          )}
         </div>
       )}
 

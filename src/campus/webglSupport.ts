@@ -18,10 +18,8 @@ export function getWebGLAvailability(): boolean {
 
   try {
     const canvas = document.createElement('canvas');
-    const gl =
-      canvas.getContext('webgl2') ||
-      canvas.getContext('webgl') ||
-      canvas.getContext('experimental-webgl');
+    // Modern Three.js requires WebGL 2. Check strictly for webgl2 context.
+    const gl = canvas.getContext('webgl2') as WebGL2RenderingContext | null;
 
     if (!gl) {
       cachedAvailability = false;
@@ -29,9 +27,7 @@ export function getWebGLAvailability(): boolean {
     }
 
     // Release the temporary probe context immediately
-    const loseContextExt = (gl as WebGLRenderingContext).getExtension?.(
-      'WEBGL_lose_context'
-    );
+    const loseContextExt = gl.getExtension?.('WEBGL_lose_context');
     if (loseContextExt && typeof loseContextExt.loseContext === 'function') {
       loseContextExt.loseContext();
     }

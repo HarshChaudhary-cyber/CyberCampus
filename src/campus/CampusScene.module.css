@@ -6,6 +6,11 @@
   width: 100%;
   height: 100%;
   background: #06060f;
+  touch-action: pan-y;
+}
+
+.canvasWrapper canvas {
+  touch-action: pan-y !important;
 }
 
 /* ── Reset View Button ────────────────────────────────────────────────────── */
