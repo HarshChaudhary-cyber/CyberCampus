@@ -1,5 +1,5 @@
 /* ============================================================
-   Campus Page — polished 2D campus map
+   Campus Page — 3D campus + accessible 2D fallback
    ============================================================ */
 
 .page {
@@ -7,7 +7,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-12) var(--page-pad-x) var(--space-16);
+  /* No large padding-top — the header sits flush and the 3D canvas fills below */
+  padding: var(--space-8) var(--page-pad-x) var(--space-12);
   position: relative;
   overflow: hidden;
 }
@@ -24,23 +25,26 @@
   z-index: 0;
 }
 
-.content {
+/* ── Header ── */
+.header {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   max-width: 960px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.header {
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
 }
 
 .pill {
@@ -72,7 +76,99 @@
   max-width: 480px;
 }
 
-/* ── Grid ── */
+/* ── 3D / 2D toggle button ── */
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-dim);
+  border: 1px solid var(--color-accent-glow);
+  border-radius: var(--radius-full);
+  padding: 6px var(--space-4);
+  cursor: pointer;
+  transition:
+    background var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.toggleBtn:hover {
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  box-shadow: 0 0 16px var(--color-accent-glow);
+}
+
+.toggleBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── 3D canvas container ── */
+.sceneContainer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1100px;
+  height: 480px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 640px) {
+  .sceneContainer {
+    height: 340px;
+  }
+}
+
+.sceneLoading {
+  position: absolute;
+  inset: 0;
+  background: #06060f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+}
+
+.sceneLoadingDot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Content (2D grid or chip row) ── */
+.content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* ── 2D Room grid ── */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -99,7 +195,6 @@
     background   var(--dur-base) var(--ease-out);
   cursor: pointer;
   outline: none;
-  /* Minimum touch target */
   min-height: 140px;
 }
 
@@ -227,4 +322,62 @@
   top: var(--space-4);
   right: var(--space-4);
   color: var(--color-text-muted);
+}
+
+/* ── Room list below 3D view ── */
+.roomListBelow {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.roomListCaption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.roomChips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.roomChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-4) 6px var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow   var(--dur-fast) var(--ease-out),
+    background   var(--dur-fast) var(--ease-out);
+}
+
+.roomChip:hover,
+.roomChip:focus-visible {
+  border-color: var(--room-accent, var(--color-accent));
+  background: var(--color-surface-alt);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--room-accent, var(--color-accent)) 25%, transparent);
+  outline: none;
+}
+
+.chipBadge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
 }

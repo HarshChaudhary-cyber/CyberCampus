@@ -1,0 +1,76 @@
+/* CyberCampus — CampusScene CSS Module */
+
+.canvasWrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #06060f;
+}
+
+/* ── Floating building label ──────────────────────────────────────────────── */
+
+.buildingLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 8px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s,
+    color 0.2s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  user-select: none;
+}
+
+.buildingLabelTitle {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.buildingLabelBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+/* ── Orbit hint ───────────────────────────────────────────────────────────── */
+
+.orbitHint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Loading shimmer ──────────────────────────────────────────────────────── */
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06060f;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
